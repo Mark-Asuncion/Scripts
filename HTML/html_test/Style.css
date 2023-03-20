@@ -1,0 +1,22 @@
+body {background-image:url('background1.jpg');
+background-size: auto;
+background-repeat: no-repeat;
+}
+h1{color: white;text-align:center; font-size: 30px;}
+
+.paragraph1 {color: white;
+position:relative;
+  width:300px;
+  height:30px;
+  left:510px;
+  top:-15px;}
+
+.img {
+position:relative;
+top:-20px;
+margin:auto;
+width:75%;
+height:300px;
+border: 3px solid #B8862E ;
+padding:10px;
+}

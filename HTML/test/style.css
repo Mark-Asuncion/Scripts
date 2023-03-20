@@ -1,0 +1,42 @@
+body{
+font-family:gothic;
+background-image:url('./img/ANIFLIX BG.jpg');
+background-attachment:fixed;
+background-repeat:no-repeat;
+background-size:cover;
+}
+
+.header-container {
+background-color:black;
+position:fixed;
+top:0;
+left:0;
+padding:14px 8px;
+width:100%;
+height:10%;
+}
+.header{
+   width:20%;
+   height:auto;
+}
+.row {
+    margin-left:10%;
+    margin-right:5%;
+    margin-bottom:2%;
+    margin-top:7%;
+}
+.row2 {
+    margin-left:10%;
+    margin-right:5%;
+    margin-bottom:5%;
+}
+.gif {
+    width:200px;
+    height:130px; 
+    margin-right:50px;  
+}
+.caption {
+    color:white;
+    margin-right:100px;
+    margin-left:60px
+}

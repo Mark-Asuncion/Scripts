@@ -1,0 +1,87 @@
+body {
+	background-image: url('background.png');
+	background-repeat: no-repeat;
+	background-size: 100% 100%;
+}
+h1 {text-align:center; color: white;}
+
+.paragraph1 {text-align: center; color:white;}
+
+.overlay {
+opacity:0.9;
+background-color:white;	
+margin:auto;
+width:80%;
+height:370px;
+border: 3px solid #B8862E ;
+padding:10px;
+}
+
+.switch {
+	border: 2px solid #DC3E28 ;
+	background-color:white;
+	padding: 8px 12px;
+	text-align: center;
+	text-decoration: none;
+	display: inline-block;
+	font-size: 16px;
+	margin: 4px 2px;
+	transition-duration: 0.4s;
+	cursor: pointer;
+	position:relative;
+	left:110px;	
+	top:-10px;
+}
+
+.switch:hover {
+background-color: #DC3E28;
+color:white;
+}
+
+.yuji {
+	border: 2px solid #CE9126;
+	width:200px;
+	height:200px;
+	position:relative;
+	left:50px;
+	top:5px;
+}
+
+.yujitxt {
+	color:black;
+	position:relative;
+	left:100px;
+	top:-10px;
+}
+
+.megumi {
+	border: 2px solid #CE9126;
+	width:200px;
+	height:200px;
+	position:relative;
+	left:400px;
+	top:-254px;
+}
+
+.megutxt {
+	color:black;
+	position:relative;
+	left:440px;
+	top:-270px;
+}
+
+.nobara {
+	border: 2px solid #CE9126;
+	width:200px;
+	height:200px;
+	position:relative;
+	left:730px;
+	top:-512px;
+}
+
+.nobatxt {
+	color:black;
+	position:relative;
+	left:780px;
+	top:-530px;
+}

@@ -1,0 +1,63 @@
+
+<!DOCTYPE html>
+
+
+<html>
+<head>
+
+<title>Image button </title>
+<style>
+body {
+
+	background-image: url('back.png');
+	background-attachment;fixed;
+	background-size:cover;
+	}
+	</style>
+	</head>
+<body>
+
+<script>
+
+function light(sw) {
+
+  var pic;
+
+  if (sw == 0) {
+
+    pic = "off.jpg"
+
+  } else if (sw == 1)  {
+
+    pic = "on.gif"
+
+  } 
+  else if (sw == 2)
+  {
+  pic ="blue.gif"
+  }
+ 
+  
+    document.getElementById('myImage').src = pic;
+
+}
+
+</script>
+
+
+<img id="myImage" width="400" height="400">
+
+
+
+<button type="button" onclick="light(0)">Off</button>
+
+<button type="button" onclick="light(1)">On</button>
+
+<button type="button" onclick="light(2)">Blue Light</button>
+
+</body>
+
+</html>
+
+​
+
