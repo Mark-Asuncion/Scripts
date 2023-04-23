@@ -494,16 +494,18 @@ class Manager{
             this->name += id;
         }
     };
-    struct OPTHelper {
-        bool appeared_opt = false;
-        int opt_dist = 0;
-    };
-    class Frame : OPTHelper{
+    class Frame {
         private:
         std::string name = "F";
         int id;
         Page *page = nullptr;
         public:
+        bool appeared_opt = false;
+        bool appeared_lru = false;
+        void resetAppeared() {
+            appeared_lru = false;
+            appeared_opt = false;
+        }
         Frame(int id){
             this->id = id;
             this->name += std::to_string(id);
@@ -525,7 +527,7 @@ class Manager{
         std::vector<Frame> frames;
         std::queue<Frame*> fifo;
         std::deque<Frame*> opt;
-        std::deque<Frame*> lru;
+        std::deque<Page*> lru;
         int page_fault = 0;
         int page_hit = 0;
         public:

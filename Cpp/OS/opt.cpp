@@ -14,16 +14,17 @@ void Memory::FrameManager::allocator(std::deque<Page*>& pages, Table& table){
             if(!i->isHandling()){
                 inFrame = true;
                 i->setPage(curr_page);
-                lru.push_back(&(*i));
+                lru.push_back(curr_page);
                 pages.pop_front();
                 // pages_ptr++;
                 page_fault++;
+                table.edit_col(table.colSize()-1,table.Header().size()-1,Color::Fore_White_Back_Red,"*");
                 break;
             }
             if (i->getPage().name == curr_page->name){
                 inFrame = true;
                 pages.pop_front();
-                lru.push_back(&(*i));
+                lru.push_back(curr_page);
                 page_hit++;
                 // pages_ptr++;
                 break;
@@ -31,20 +32,17 @@ void Memory::FrameManager::allocator(std::deque<Page*>& pages, Table& table){
         }
     if (!inFrame){
         page_fault++;
-
-        int opt_dist = 1;
+        // doesn't take into account of pages frequency
         int farthest_idx = 0;
         for (Pages_it i = pages.begin() + 1;i!=pages.end();i++){
             for (frame_it j = frames.begin();j!=frames.end();j++){
                 if ((*i)->name == j->getPage().name && !j->appeared_opt){
                     j->appeared_opt = true;
-                    j->opt_dist = opt_dist;
                     farthest_idx = j->getID()-1;
                     // opt.push_back(&(*j));
                     break;
                 }
             }
-            opt_dist++;
         }
         int first_lru_idx = -1;
         int count_lru = 0;
@@ -70,21 +68,31 @@ void Memory::FrameManager::allocator(std::deque<Page*>& pages, Table& table){
         //     }
         // }
 
-        if(count_lru == 0){
-            frames[farthest_idx].setPage(curr_page);
-            table.edit_ccolor(table.Header().size()-2,farthest_idx,Fore_Yellow);
+        if (count_lru == 1){
+            farthest_idx = first_lru_idx;
         }
-        else if (count_lru == 1){
-            frames[first_lru_idx].setPage(curr_page);
-            table.edit_ccolor(table.Header().size()-2,first_lru_idx,Fore_Yellow);
-        }
-        else {
+        else if (count_lru > 1){
             // Do lru
+            for (Pages_rit i = lru.rbegin()+1;i!=lru.rend();i++){
+                for (frame_it j = frames.begin();j!=frames.end();j++){
+                    if (j->appeared_opt) continue;
+                    if ((*i)->name == j->getPage().name && !j->appeared_lru){
+                        j->appeared_lru = true;
+                        farthest_idx = j->getID()-1;
+                        break;
+                    }
+                }
+            }
         }
+        frames[farthest_idx].setPage(curr_page);
+        table.edit_ccolor(farthest_idx+1,table.Header().size()-2,Fore_Yellow);
+        table.edit_ccolor(farthest_idx+1,table.Header().size()-1,Fore_Red);
         pages.pop_front();
         // pages_ptr++;
     }
-
+    for (frame_it i = frames.begin();i!=frames.end();i++){
+        i->resetAppeared();
+    }
     for(int i=1;i<table.colSize()-1;i++){
         if (!frames.at(i-1).isHandling()) continue;
         table.edit_col(i,table.Header().size()-1,frames.at(i-1).getPage().name);
@@ -149,9 +157,13 @@ int main(){
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     }
     while(!requested_pages.empty()){
-        break;
+        clrscr();
+        frame_table.allocator(requested_pages,table);
+        table.print();
+        conts();
     }
-    cout << "Conclusion: \n";
+    table.print();
+    cout << "\nConclusion: \n";
     cout << "Page Fault: " << frame_table.pageFault() << '\n';
     cout << "Page Hit: " << frame_table.pageHit() << '\n';
     return 0;
