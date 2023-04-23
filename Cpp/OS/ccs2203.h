@@ -10,6 +10,8 @@
 #include <sstream>
 #include <algorithm>
 #include <stdexcept>
+#include <queue>
+#include <deque>
 
 // header for CCS 2203 class
 // Namespace:
@@ -145,17 +147,6 @@ type input(std::string prompt, std::string &message, int greaterthan, int lessth
 }
 
 namespace Color{
-    // color foreground background
-    // Black	30	40
-    // Red	31	41
-    // Green	32	42
-    // Yellow	33	43
-    // Blue	34	44
-    // Magenta	35	45
-    // Cyan	36	46
-    // White	37	47
-    // Default	39	49
-    // Reset	0	0
     const std::string NORMAL  = "\x1B[0m";
     const std::string BOLD = "\x1B[1m";
     const std::string Bold_Fore_Red  = "\x1B[1;31m";
@@ -165,20 +156,9 @@ namespace Color{
     const std::string Fore_White_Back_Red  = "\x1B[1;37;41m";
     const std::string Fore_Cyan_Back_Green  = "\x1B[1;36;42m";
     const std::string Fore_Cyan_Back_Red  = "\x1B[1;36;41m";
-    const std::string Strike_Yellow =  "\x1B[9;33m";
-    const std::string Reset_Strike =  "\x1B[29m";
-    const std::string Fore_Black =  "\x1B[0;30m";
-    const std::string Back_Black =  "\x1B[0;40m";
     const std::string Fore_Red = "\x1B[0;31m";
-    const std::string Back_Red =  "\x1B[0;41m";
     const std::string Fore_Green = "\x1B[0;32m";
-    const std::string Back_Green = "\x1B[0;42m";
     const std::string Fore_Yellow = "\x1B[0;33m";
-    const std::string Back_Yellow =  "\x1B[0;43m";
-    const std::string Fore_White =  "\x1B[0;37m";
-    const std::string Back_White =  "\x1B[0;47m";
-    const std::string Fore_Default =  "\x1B[0;39m";
-    const std::string Back_Default =  "\x1B[0;49m";
 }
 namespace Format{
     std::stringstream ss;
@@ -257,6 +237,7 @@ class Table{
     //===============================
     const vct& Header(){ return *header;}
     const vcct& Rows() {return *rows; }
+    int colSize() { return rows->size() + 1; }
     void push_header(std::string val){
         header->push_back(val);
         color_header.push_back("");
@@ -268,15 +249,9 @@ class Table{
         tresize();
     }
     void edit_header(int pos, std::string newVal){
-        if(pos < 0 || pos >= header->size()){
-            throw(std::out_of_range("edit_header. Invalid pos"));
-        }
         header->at(pos) = newVal;
     }
     void edit_header(int pos, std::string newColor,std::string newVal){
-        if(pos < 0 || pos >= header->size()){
-            throw(std::out_of_range("edit_header. Invalid pos"));
-        }
         header->at(pos) = newVal;
         color_header.at(pos) = newColor;
     }
@@ -293,58 +268,77 @@ class Table{
         color_rows.push_back(color);
         rows->push_back(nrow);
     }
+    void push_col(vct col){
+        if(col.size() != rows->size() + 1) col.resize(rows->size()+1);
+        header->push_back(col[0]);
+        color_header.push_back("");
+        for(int i = 1;i<rows->size()+1;i++){
+            rows->at(i-1).push_back(col.at(i));
+            color_rows.at(i-1).push_back("");
+        }
+    }
+    void push_col(vct color,vct col){
+        if(col.size() != rows->size() + 1) col.resize(rows->size()+1);
+        if(color.size() != col.size()) color.resize(col.size());
+        header->push_back(col[0]);
+        color_header.push_back(color[0]);
+        for(int i = 1;i<rows->size()+1;i++){
+            rows->at(i-1).push_back(col.at(i));
+            color_rows.at(i-1).push_back(color.at(i));
+        }
+    }
+    void edit_col(int pos1,int pos2, std::string newVal){
+        if(pos1 == 0){
+            header->at(pos2) = newVal;
+        }
+        else{
+            rows->at(pos1-1).at(pos2) = newVal;
+        }
+    }
+     void edit_col(int pos1,int pos2,std::string color ,std::string newVal){
+        if(pos1 == 0){
+            header->at(pos2) = newVal;
+            color_header.at(pos2) = color;
+        }
+        else{
+            rows->at(pos1-1).at(pos2) = newVal;
+            color_rows.at(pos1-1).at(pos2) = color;
+        }
+    }
+    void edit_ccolor(int pos1, int pos2, std::string color){
+        if(pos1 == 0) color_header.at(pos2) = color;
+        else color_rows.at(pos1-1).at(pos2) = color;
+    }
     void edit_row(int pos1,int pos2, std::string newVal){
-        if(pos1 < 0 || pos1 >= rows->size()){
-            throw(std::out_of_range("edit_row. Invalid pos1"));
-        }
-        if(pos2 < 0 || pos2 >= (*(rows->begin() + pos1)).size()){
-            throw(std::out_of_range("edit_row. Invalid pos2"));
-        }
         rows->at(pos1).at(pos2) = newVal;
     }
     void edit_row(int pos1,int pos2, std::string color,std::string newVal){
-        if(pos1 < 0 || pos1 >= rows->size()){
-            throw(std::out_of_range("edit_row. Invalid pos1"));
-        }
-        if(pos2 < 0 || pos2 >= (*(rows->begin() + pos1)).size()){
-            throw(std::out_of_range("edit_row. Invalid pos2"));
-        }
         rows->at(pos1).at(pos2) = newVal;
         color_rows.at(pos1).at(pos2) = color;
     }
     void edit_hcolor(int pos, std::string color){
-        if(pos < 0 || pos >= header->size()){
-            throw(std::out_of_range("edit_hcolor. Invalid pos"));
-        }
-        
         color_header.at(pos) = color;
     }
     void edit_rcolor(int pos1,int pos2, std::string color){
-        if(pos1 < 0 || pos1 >= rows->size()){
-            throw(std::out_of_range("edit_rcolor. Invalid pos1"));
-        }
-        if(pos2 < 0 || pos2 >= (*(rows->begin()+pos1)).size()){
-            throw(std::out_of_range("edit_rcolor. Invalid pos2"));
-        }
         color_rows.at(pos1).at(pos2) = color;
     }
     void clear_hcolor() { 
-        if(color_header.empty()) throw(std::out_of_range("clear_hcolor. Header is empty"));
+        if(color_header.empty()) return;
         color_header.assign(header->size(),""); 
     }
     void clear_rcolor() { 
-        if(color_rows.empty()) throw(std::out_of_range("clear_rcolor. Row is empty"));
+        if(color_rows.empty()) return;
         color_rows.assign(rows->size(),vct(header->size(),"")); 
     }
     void del_header(int pos){
-        if(header->empty()) throw(std::out_of_range("del_header. Header is empty"));
+        if(header->empty()) return;
         if(pos < 0 || pos >= header->size()) throw(std::out_of_range("del_header. Invalid pos"));
         color_header.erase(color_header.begin()+pos);
         header->erase(header->begin()+pos);
         tresize();
     }
     void del_row(int pos){
-        if(rows->empty()) throw(std::out_of_range("del_row. Row is empty"));
+        if(rows->empty()) return;
         if(pos < 0 || pos >= rows->size()) throw(std::out_of_range("del_row. Invalid pos"));
         color_rows.erase(color_rows.begin()+pos);
         rows->erase(rows->begin()+pos);
@@ -493,6 +487,54 @@ class Manager{
         }
     }
 };
+    class Page {
+        public:
+        std::string name = "P";
+        Page(char id){
+            this->name += id;
+        }
+    };
+    struct OPTHelper {
+        bool appeared_opt = false;
+        int opt_dist = 0;
+    };
+    class Frame : OPTHelper{
+        private:
+        std::string name = "F";
+        int id;
+        Page *page = nullptr;
+        public:
+        Frame(int id){
+            this->id = id;
+            this->name += std::to_string(id);
+        }
+        const int& getID() { return id; }
+        const std::string& getName() { return name; }
+        const Page& getPage() { return *page; }
+        void setPage(Page *page) { this->page = page; }
+        void clear() { page = nullptr; }
+        bool isHandling() { return page; }
+    };
+    class FrameManager {
+        private:
+        typedef std::vector<Frame>::iterator frame_it;
+        typedef std::deque<Frame*>::reverse_iterator frame_rit;
+        typedef std::deque<Page*>::iterator Pages_it;
+        typedef std::deque<Page*>::reverse_iterator Pages_rit;
+        // int pages_ptr = 0;
+        std::vector<Frame> frames;
+        std::queue<Frame*> fifo;
+        std::deque<Frame*> opt;
+        std::deque<Frame*> lru;
+        int page_fault = 0;
+        int page_hit = 0;
+        public:
+        const int& pageFault() { return page_fault; }
+        const int& pageHit() { return page_hit; }
+        std::vector<Frame>& getFrames() { return frames; }
+        void allocator(std::deque<Page*>& pages, Table& table);
+        void allocator(std::queue<Page*>& pages, Table& table);
+    };
 }
 
 #endif
