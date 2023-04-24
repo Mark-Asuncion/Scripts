@@ -179,7 +179,7 @@ namespace Format{
     // val = value to round
     // length = how many decimal places to keep
     float fround(float const &val,int length){
-        return ceil(val * pow(10,length)) / pow(10,length);
+        return 0.0;
     }
 }
 
