@@ -179,7 +179,7 @@ namespace Format{
     // val = value to round
     // length = how many decimal places to keep
     float fround(float const &val,int length){
-        return 0.0;
+        return ceil(val * pow(10,length)) / pow(10,length);
     }
 }
 
@@ -189,8 +189,8 @@ class Table{
     
     private:
     int width = 10;
-    vct *header;
-    vcct *rows = new vcct();
+    vct header;
+    vcct rows;
 
     vct color_header;
     vcct color_rows;
@@ -203,31 +203,26 @@ class Table{
         return f;
     }
     void tresize(){
-        if(rows->empty()) return;
-        if(header->size() != rows->begin()->size()){
-            for(vcct::iterator i = rows->begin();i!=rows->end();i++){
-                i->resize(header->size());
+        if(rows.empty()) return;
+        if(header.size() != rows.begin()->size()){
+            for(vcct::iterator i = rows.begin();i!=rows.end();i++){
+                i->resize(header.size());
             }
             for(vcct::iterator i = color_rows.begin();i!=color_rows.end();i++){
-                i->resize(header->size());
+                i->resize(header.size());
             }
         }
     }
     public:
     //constructor===================
-    Table(){
-        this->header = new vct();
+    Table() {}
+    Table(std::initializer_list<std::string> header){
+        this->header.insert(this->header.end(),header.begin(),header.end());
+        color_header.assign(header.size(),"");
     }
-    Table(vct *header){
-        this->header = header;
-        color_header.assign(header->size(),"");
-    }
-    Table(vct *header,std::string color){
-        this->header = header;
-        color_header.assign(header->size(),color);
-    }
-    ~Table(){
-        delete header,rows;
+    Table(std::initializer_list<std::string> header,std::string color){
+        this->header.insert(this->header.end(),header.begin(),header.end());
+        color_header.assign(header.size(),color);
     }
     void setWidth(int val){
         if(val < 10) return;
@@ -235,73 +230,74 @@ class Table{
     }
     const int& getWidth() {return this->width; }
     //===============================
-    const vct& Header(){ return *header;}
-    const vcct& Rows() {return *rows; }
-    int colSize() { return rows->size() + 1; }
+    const vct& Header(){ return header;}
+    const vcct& Rows() {return rows; }
+    int rowSize() { return rows.size(); }
+    int colSize() { return rows.size() + 1; }
     void push_header(std::string val){
-        header->push_back(val);
+        header.push_back(val);
         color_header.push_back("");
         tresize();
     }
     void push_header(std::string color, std::string val){
         color_header.push_back(color);
-        header->push_back(val);
+        header.push_back(val);
         tresize();
     }
     void edit_header(int pos, std::string newVal){
-        header->at(pos) = newVal;
+        header.at(pos) = newVal;
     }
     void edit_header(int pos, std::string newColor,std::string newVal){
-        header->at(pos) = newVal;
+        header.at(pos) = newVal;
         color_header.at(pos) = newColor;
     }
     void push_row(vct nrow){
-        if(nrow.size() != header->size()) nrow.resize(header->size());
+        if(nrow.size() != header.size()) nrow.resize(header.size());
         color_rows.push_back(vct(nrow.size(),""));
-        rows->push_back(nrow);
+        rows.push_back(nrow);
     }
     void push_row(vct color, vct nrow){
-        if(nrow.size() != header->size()) nrow.resize(header->size());
+        if(nrow.size() != header.size()) nrow.resize(header.size());
         if(color.size() != nrow.size()){
             color.assign(nrow.size(),*(color.begin()));
         }
         color_rows.push_back(color);
-        rows->push_back(nrow);
+        rows.push_back(nrow);
     }
     void push_col(vct col){
-        if(col.size() != rows->size() + 1) col.resize(rows->size()+1);
-        header->push_back(col[0]);
+        if(col.size() != rows.size() + 1) col.resize(rows.size()+1);
+        header.push_back(col[0]);
         color_header.push_back("");
-        for(int i = 1;i<rows->size()+1;i++){
-            rows->at(i-1).push_back(col.at(i));
+        for(int i = 1;i<rows.size()+1;i++){
+            rows.at(i-1).push_back(col.at(i));
             color_rows.at(i-1).push_back("");
         }
     }
     void push_col(vct color,vct col){
-        if(col.size() != rows->size() + 1) col.resize(rows->size()+1);
+        if(col.size() != rows.size() + 1) col.resize(rows.size()+1);
         if(color.size() != col.size()) color.resize(col.size());
-        header->push_back(col[0]);
+        header.push_back(col[0]);
         color_header.push_back(color[0]);
-        for(int i = 1;i<rows->size()+1;i++){
-            rows->at(i-1).push_back(col.at(i));
+        for(int i = 1;i<rows.size()+1;i++){
+            rows.at(i-1).push_back(col.at(i));
             color_rows.at(i-1).push_back(color.at(i));
         }
     }
     void edit_col(int pos1,int pos2, std::string newVal){
         if(pos1 == 0){
-            header->at(pos2) = newVal;
+            header.at(pos2) = newVal;
         }
         else{
-            rows->at(pos1-1).at(pos2) = newVal;
+            rows.at(pos1-1).at(pos2) = newVal;
         }
     }
-     void edit_col(int pos1,int pos2,std::string color ,std::string newVal){
+    void edit_col(int pos1,int pos2,std::string color ,std::string newVal){
         if(pos1 == 0){
-            header->at(pos2) = newVal;
+            header.at(pos2) = newVal;
             color_header.at(pos2) = color;
         }
         else{
-            rows->at(pos1-1).at(pos2) = newVal;
+            rows.at(pos1-1).at(pos2) = newVal;
             color_rows.at(pos1-1).at(pos2) = color;
         }
     }
@@ -310,10 +306,10 @@ class Table{
         else color_rows.at(pos1-1).at(pos2) = color;
     }
     void edit_row(int pos1,int pos2, std::string newVal){
-        rows->at(pos1).at(pos2) = newVal;
+        rows.at(pos1).at(pos2) = newVal;
     }
     void edit_row(int pos1,int pos2, std::string color,std::string newVal){
-        rows->at(pos1).at(pos2) = newVal;
+        rows.at(pos1).at(pos2) = newVal;
         color_rows.at(pos1).at(pos2) = color;
     }
     void edit_hcolor(int pos, std::string color){
@@ -324,35 +320,35 @@ class Table{
     }
     void clear_hcolor() { 
         if(color_header.empty()) return;
-        color_header.assign(header->size(),""); 
+        color_header.assign(header.size(),""); 
     }
     void clear_rcolor() { 
         if(color_rows.empty()) return;
-        color_rows.assign(rows->size(),vct(header->size(),"")); 
+        color_rows.assign(rows.size(),vct(header.size(),"")); 
     }
     void del_header(int pos){
-        if(header->empty()) return;
-        if(pos < 0 || pos >= header->size()) throw(std::out_of_range("del_header. Invalid pos"));
+        if(header.empty()) return;
+        if(pos < 0 || pos >= header.size()) throw(std::out_of_range("del_header. Invalid pos"));
         color_header.erase(color_header.begin()+pos);
-        header->erase(header->begin()+pos);
+        header.erase(header.begin()+pos);
         tresize();
     }
     void del_row(int pos){
-        if(rows->empty()) return;
-        if(pos < 0 || pos >= rows->size()) throw(std::out_of_range("del_row. Invalid pos"));
+        if(rows.empty()) return;
+        if(pos < 0 || pos >= rows.size()) throw(std::out_of_range("del_row. Invalid pos"));
         color_rows.erase(color_rows.begin()+pos);
-        rows->erase(rows->begin()+pos);
+        rows.erase(rows.begin()+pos);
     }
     //
     //std:: std::setfill std::setw std::left, std::right
     //printer
     void print(){
         //header=============================
-        std::string x = std::to_string(rows->size());
-        std::cout << '+' <<std::setfill('-') << std::setw((width+1) * header->size() + x.size()) << "" << '+'<<std::endl;
+        std::string x = std::to_string(rows.size());
+        std::cout << '+' <<std::setfill('-') << std::setw((width+1) * header.size() + x.size()) << "" << '+'<<std::endl;
         std::cout << '|' << std::setfill(' ') << std::left << std::setw(x.size()) << 0 << "|";
         vct::iterator color = color_header.begin();
-        for(vct::iterator i = header->begin();i!=header->end();i++){
+        for(vct::iterator i = header.begin();i!=header.end();i++){
             std::string retToNormal = (*color == "")? "":Color::NORMAL;
             std::cout << *color;
             std::cout << std::setfill(' ') << std::right << std::setw(width)  << str_trunc(*i) << retToNormal << '|';
@@ -361,14 +357,14 @@ class Table{
         std::cout << std::endl;
         //
         std::cout << '|' <<std::setfill('-') << std::left << std::setw(x.size()) << "" << "+";
-        for(int i =0;i<header->size();i++){
+        for(int i =0;i<header.size();i++){
             std::cout << std::setfill('-') << std::setw(width) << ""<< "+";
         }
         std::cout << std::endl;
         //body===============================
         int n_row = 0;
         vcct::iterator row_color = color_rows.begin();
-        for(vcct::iterator i = rows->begin();i!=rows->end();i++){
+        for(vcct::iterator i = rows.begin();i!=rows.end();i++){
             n_row++;
             
             std::cout <<'|' <<std::setfill(' ') << std::left << std::setw(x.size()) << n_row << "|";
@@ -381,16 +377,16 @@ class Table{
             }
             std::cout << std::endl;
             //
-            if(i == rows->end()-1) continue;
+            if(i == rows.end()-1) continue;
             std::cout << '|' <<std::setfill('-') << std::left << std::setw(x.size()) << "" << "+";
-            for(int i =0;i<header->size();i++){
+            for(int i =0;i<header.size();i++){
                 std::cout << std::setfill('-') << std::setw(width) << ""<< "+";
             }
             std::cout << std::endl;
             row_color++;
             //
         }
-        std::cout << '+' <<std::setfill('-') << std::setw((width+1) * header->size() + x.size()) << ""<< '+'<<std::endl;
+        std::cout << '+' <<std::setfill('-') << std::setw((width+1) * header.size() + x.size()) << ""<< '+'<<std::endl;
     }
 };
 
@@ -536,6 +532,23 @@ class Manager{
         std::vector<Frame>& getFrames() { return frames; }
         void allocator(std::deque<Page*>& pages, Table& table);
         void allocator(std::queue<Page*>& pages, Table& table);
+    };
+    class Process{
+        int id;
+        int arrival_time;
+        int burst_time;
+        int completion_time;
+        public:
+        Process(int id) {
+            this->id = id;
+        }
+        void setArrivalTime(int arrival_time) { this->arrival_time = arrival_time; }
+        void setBurstTime(int burst_time) { this->burst_time = burst_time; }
+        void setCompletion_time(int completion_time) { this->completion_time = completion_time; }
+        const int& getID() { return this->id; }
+        const int& getArrivalTime() { return this->arrival_time; }
+        const int& getBurstTime() { return this->burst_time; }
+        const int& getCompletion_time() { return this->completion_time; }
     };
 }
 
