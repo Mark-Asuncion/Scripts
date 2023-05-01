@@ -533,22 +533,11 @@ class Manager{
         void allocator(std::deque<Page*>& pages, Table& table);
         void allocator(std::queue<Page*>& pages, Table& table);
     };
-    class Process{
+    struct Process{
         int id;
         int arrival_time;
         int burst_time;
         int completion_time;
-        public:
-        Process(int id) {
-            this->id = id;
-        }
-        void setArrivalTime(int arrival_time) { this->arrival_time = arrival_time; }
-        void setBurstTime(int burst_time) { this->burst_time = burst_time; }
-        void setCompletion_time(int completion_time) { this->completion_time = completion_time; }
-        const int& getID() { return this->id; }
-        const int& getArrivalTime() { return this->arrival_time; }
-        const int& getBurstTime() { return this->burst_time; }
-        const int& getCompletion_time() { return this->completion_time; }
     };
 }
 
