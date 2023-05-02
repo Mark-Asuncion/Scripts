@@ -538,6 +538,7 @@ class Manager{
         int arrival_time;
         int burst_time;
         int completion_time;
+        bool isDone;
     };
 }
 
