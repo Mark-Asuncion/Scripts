@@ -36,7 +36,7 @@ void p_process(deque<Process> &process,vector<int>& to_update,Table& process_tab
         // to_update empty means there is no jobs to process in this current time
         // update curr_time to the lowest arrival_time
         // if (process[min_arrive].isDone) return;
-        p_ct = process[min_arrive].arrival_time;
+        p_ct = to_string(process[min_arrive].arrival_time);
         curr_time = process[min_arrive].arrival_time;
     }
     if(p_ct.size() > process_table.getWidth()) process_table.setWidth(p_ct.size()); // set new table cell width
