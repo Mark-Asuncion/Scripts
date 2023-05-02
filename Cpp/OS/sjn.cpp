@@ -9,20 +9,16 @@ void p_process(deque<Process> &process,vector<int>& to_update,Table& process_tab
     int min_arrive=0;
     if (to_update.empty()){
         for(int i=0;i<process.size();i++){
-            if(process[min_arrive].arrival_time < process[i].arrival_time) min_arrive = i;
-            if(curr_time > process[i].arrival_time) continue;
+            if(process[i].isDone) continue;
+            if(process[min_arrive].isDone) min_arrive = i;
+            else if(process[min_arrive].arrival_time < process[i].arrival_time) min_arrive = i;
+            if(curr_time < process[i].arrival_time) continue;
             to_update.push_back(i);
         }
     }
     string p_name="",p_ct="";
     
-    if(to_update.empty()){
-        // to_update empty means there is no jobs to process in this current time
-        // update curr_time to the lowest arrival_time
-        p_ct = process[min_arrive].arrival_time;
-        curr_time = process[min_arrive].arrival_time;
-    }
-    else{
+    if(!to_update.empty()){
          auto p_sort = [&process](int a, int b) -> bool{
             bool c = process[a].burst_time < process[b].burst_time;
             return (c)? c:process[a].arrival_time < process[b].arrival_time;
@@ -33,8 +29,15 @@ void p_process(deque<Process> &process,vector<int>& to_update,Table& process_tab
         curr_time = cct;
         p_name += to_string(process[to_update[0]].id);
         p_ct += to_string(cct);
-
+        process[to_update[0]].isDone = true;
         to_update.erase(to_update.begin());
+    }
+    else {
+        // to_update empty means there is no jobs to process in this current time
+        // update curr_time to the lowest arrival_time
+        // if (process[min_arrive].isDone) return;
+        p_ct = process[min_arrive].arrival_time;
+        curr_time = process[min_arrive].arrival_time;
     }
     if(p_ct.size() > process_table.getWidth()) process_table.setWidth(p_ct.size()); // set new table cell width
     // update table
@@ -48,9 +51,6 @@ int main(){
     int n_process = input<int>("Enter number of process: ",ms,false);
     deque<Process> process;
     Table table({"Processes","Arrival","Burst","CT","TAT","WT"},BOLD);
-    // table.push_row({""});
-    table.setWidth(11);
-    // table.print();
     // conts();
     // enter arrival time
     ss << "Arrival Time\n";
@@ -60,7 +60,7 @@ int main(){
         int arrival_time = input<int>("Enter arrival time of P" + to_string(i+1) + ": ",ms,false);
         ss << "Enter arrival time of P" << to_string(i+1) << ": " << arrival_time << '\n';
         ms += ss.str();
-        process.push_back({i+1,arrival_time,0,0,false});
+        process.push_back({.id = i+1,.arrival_time = arrival_time, .isDone = false});
         ss.str(string());
     }
     // conts();
@@ -82,7 +82,6 @@ int main(){
     for (deque<Process>::iterator i=process.begin();i!=process.end();i++){
         table.push_row( {
                         to_string(i->id),
-                        "",
                         to_string(i->arrival_time), 
                         to_string(i->burst_time) 
         } );
@@ -93,7 +92,7 @@ int main(){
     Table process_table;
     process_table.push_header("");
     process_table.push_row({"0"});
-    process_table.setWidth(3);
+    // process_table.setWidth(5);
     process_table.print();
     vector<int> to_update; // idx
     int curr_time = 0;
@@ -104,21 +103,49 @@ int main(){
         }
         return true;
     };
+    auto str_center = [](string str, int width) -> string{
+        width -= str.size();
+        width /= 2;
+        return string(width,' ') + str;
+    };
     while(1){
         if(isDone()) break;
         clrscr();
         label();
         p_process(process,to_update,process_table,curr_time);
+        
+        string n = to_string(process_table.colSize());
+        int w = (process_table.getWidth()+1) * process_table.rowSize() + n.size();
+
+        cout << '+' << setfill('-') << setw(w) << '-' << "+\n";
+        cout << '|' << setfill(' ') << setw(w) << std::left << str_center("Timeline",w) << "|\n";
         process_table.print();
         conts();
     }
     label();
-    // calc tat, tat, wt here
+    // calc tat, wt here
+    // TAT and WT
+    float ave_tat = 0.0, ave_wt = 0.0;
+    for(int i=0;i<process.size();i++){
+        int tat = process[i].completion_time - process[i].arrival_time;
+        int wt = tat - process[i].burst_time;
 
-    float ave_tat, ave_wt;
+        // process[i].tat = tat;
+        // process[i].wt = wt;
+        int colidx = process_table.rowSize();
+        table.edit_col(i+1,colidx-3,to_string(process[i].completion_time));
+        table.edit_col(i+1,colidx-2,to_string(tat));
+        table.edit_col(i+1,colidx-1,to_string(wt));
+        
+        ave_tat += tat;
+        ave_wt += wt;
+    }
+    ave_tat /= process.size();
+    ave_wt /= process.size();
     table.print();
     cout << '\n';
     process_table.print();
+    cout << '\n';
     ave_tat = Format::truncate(ave_tat,2);
     ave_wt = Format::truncate(ave_wt,2);
     cout << "Average Turn Around Time: " << Format::toString(ave_tat) << '\n';

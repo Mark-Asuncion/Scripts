@@ -225,14 +225,13 @@ class Table{
         color_header.assign(header.size(),color);
     }
     void setWidth(int val){
-        if(val < 10) return;
         this->width = val;
     }
     const int& getWidth() {return this->width; }
     //===============================
     const vct& Header(){ return header;}
     const vcct& Rows() {return rows; }
-    int rowSize() { return rows.size(); }
+    int rowSize() { return header.size(); }
     int colSize() { return rows.size() + 1; }
     void push_header(std::string val){
         header.push_back(val);
@@ -538,6 +537,8 @@ class Manager{
         int arrival_time;
         int burst_time;
         int completion_time;
+        // int tat;
+        // int wt;
         bool isDone;
     };
 }
