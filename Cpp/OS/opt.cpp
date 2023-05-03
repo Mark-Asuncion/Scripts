@@ -32,7 +32,7 @@ void Memory::FrameManager::allocator(std::deque<Page*>& pages, Table& table){
         }
     if (!inFrame){
         page_fault++;
-        // doesn't take into account of pages frequency
+        lru.push_back(curr_page);
         int farthest_idx = 0;
         for (Pages_it i = pages.begin() + 1;i!=pages.end();i++){
             for (frame_it j = frames.begin();j!=frames.end();j++){
@@ -54,20 +54,6 @@ void Memory::FrameManager::allocator(std::deque<Page*>& pages, Table& table){
                 }
             }
         }
-
-        // for(frame_it i = frames.begin();i!=frames.end();i++){
-        //     if(!i->appeared_opt) {
-        //         count_lru++;
-        //         if(first_lru_idx == -1){
-        //             first_lru_idx = i->getID()-1;
-        //         }
-        //         continue;
-        //     }
-        //     if (frames[farthest_idx].opt_dist <= i->opt_dist){
-        //         farthest_idx = i->getID()-1;
-        //     }
-        // }
-
         if (count_lru == 1){
             farthest_idx = first_lru_idx;
         }
@@ -87,6 +73,7 @@ void Memory::FrameManager::allocator(std::deque<Page*>& pages, Table& table){
         frames[farthest_idx].setPage(curr_page);
         table.edit_ccolor(farthest_idx+1,table.Header().size()-2,Fore_Yellow);
         table.edit_ccolor(farthest_idx+1,table.Header().size()-1,Fore_Red);
+        table.edit_col(table.colSize()-1,table.Header().size()-1,Color::Fore_White_Back_Red,"*");
         pages.pop_front();
         // pages_ptr++;
     }
@@ -101,7 +88,7 @@ void Memory::FrameManager::allocator(std::deque<Page*>& pages, Table& table){
 
 
 int main(){
-    act_name = "ML-M4: ACT5 - OPT";
+    act_name = "FL-M4: ACT1 - OPT";
     // in << frame count
     // in << page count
     int f_count, p_count;
@@ -109,19 +96,20 @@ int main(){
     // f_count
     f_count = input<int>("Enter No. of Frames: ", ms, false);
     FrameManager frame_table;
-    Table table(new vector<string>{"Frames"},BOLD);
+    Table table({"Frames"},BOLD);
     for(int i = 0;i<f_count;i++){
         frame_table.getFrames().push_back(Frame(i+1));
         table.push_row({frame_table.getFrames().at(i).getName()});
     }
     label();
     table.print();
-    table.push_row({BOLD},{"Page Fault"});
+    table.push_row({BOLD},{"PF"});
+    table.setWidth(6);
     // p_count
     conts();
     p_count = input<int>("Enter No. of Pages: ", ms, false);
     vector<Page> pages;
-    Table page_table(new vector<string>{"Pages"},BOLD);
+    Table page_table({"Pages"},BOLD);
     for(int i = 0;i<p_count;i++){
         pages.push_back(Page(char(65+i)));
         page_table.push_row({pages.at(i).name});
@@ -142,7 +130,13 @@ int main(){
         label();
         cout << ms;
         cout << "Enter Requested Page No." << i+1 << ": ";
+        if (cin.peek() == 10) {
+            cout << "Wrong Input. Please input existing Page." << '\n';
+            cont();
+            continue;
+        }
         cin >> requested_page;
+        
         requested_page = toupper(requested_page);
         if(int(requested_page) > 65+(p_count-1) || int(requested_page) < 65) {
             cout << "Wrong Input. Please input existing Page." << '\n';
@@ -159,9 +153,11 @@ int main(){
     while(!requested_pages.empty()){
         clrscr();
         frame_table.allocator(requested_pages,table);
+        label();
         table.print();
         conts();
     }
+    label();
     table.print();
     cout << "\nConclusion: \n";
     cout << "Page Fault: " << frame_table.pageFault() << '\n';
