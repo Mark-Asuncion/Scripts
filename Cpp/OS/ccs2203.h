@@ -67,7 +67,7 @@ type input(std::string prompt, std::string &message){
         label();
         std::cout << message;
         std::cout << prompt;
-        if (std::cin.peek() == 10){
+        if (std::cin.peek() == 10 || std::cin.peek() == 32){
             std::cout << "Wrong Input. Please Input a number." << std::endl;
             cont();
             continue;
@@ -92,7 +92,7 @@ type input(std::string prompt, std::string &message, bool isNegative){
         label();
         std::cout << message;
         std::cout << prompt;
-        if (std::cin.peek() == 10){
+        if (std::cin.peek() == 10 || std::cin.peek() == 32){
             std::cout << "Wrong Input. Please Input a number." << std::endl;
             cont();
             continue;
@@ -122,7 +122,7 @@ type input(std::string prompt, std::string &message, int greaterthan, int lessth
         label();
         std::cout << message;
         std::cout << prompt;
-        if (std::cin.peek() == 10){
+        if (std::cin.peek() == 10 || std::cin.peek() == 32){
             std::cout << "Wrong Input. Please Input a number." << std::endl;
             cont();
             continue;

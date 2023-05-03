@@ -7,23 +7,41 @@ using Format::ss;
 
 void p_process(deque<Process> &process,vector<int>& to_update,Table& process_table, int &curr_time){
     int min_arrive=0;
-    if (to_update.empty()){
-        for(int i=0;i<process.size();i++){
+    for(int i=0;i<process.size();i++){
             if(process[i].isDone) continue;
             if(process[min_arrive].isDone) min_arrive = i;
-            else if(process[min_arrive].arrival_time < process[i].arrival_time) min_arrive = i;
+            else if(process[min_arrive].arrival_time > process[i].arrival_time) min_arrive = i;
             if(curr_time < process[i].arrival_time) continue;
+            bool is = false;
+            for(int j=0;j<to_update.size();j++){
+                int jj = to_update[j];
+                if(process[i].id == process[jj].id) {
+                    is = true;
+                    break;
+                }
+            }
+            
+            if (is) continue;
             to_update.push_back(i);
-        }
+            
     }
     string p_name="",p_ct="";
     
     if(!to_update.empty()){
-         auto p_sort = [&process](int a, int b) -> bool{
+        auto p_sort = [&process](int a, int b) -> bool{
             bool c = process[a].burst_time < process[b].burst_time;
-            return (c)? c:process[a].arrival_time < process[b].arrival_time;
+            if (c) {
+                return c;
+            }
+            else if (process[a].burst_time == process[b].burst_time){
+                return process[a].arrival_time < process[b].arrival_time;
+            }
+            return false;
+            // return (c)? c:process[a].arrival_time < process[b].arrival_time;
         };
         sort(to_update.begin(),to_update.end(),p_sort);
+        // for(auto i : to_update) cout << i+1 << ' ';
+        // cout << '\n';
         int cct = curr_time + process[to_update[0]].burst_time;
         process[to_update[0]].completion_time = cct;
         curr_time = cct;
@@ -35,7 +53,8 @@ void p_process(deque<Process> &process,vector<int>& to_update,Table& process_tab
     else {
         // to_update empty means there is no jobs to process in this current time
         // update curr_time to the lowest arrival_time
-        // if (process[min_arrive].isDone) return;
+        if (process[min_arrive].isDone) return;
+        p_name = "idle";
         p_ct = to_string(process[min_arrive].arrival_time);
         curr_time = process[min_arrive].arrival_time;
     }
@@ -45,7 +64,7 @@ void p_process(deque<Process> &process,vector<int>& to_update,Table& process_tab
 }
 
 int main(){
-    act_name = "FL-M4: ACT2 - SJN";
+    act_name = "FL-M5: ACT2 - SJN";
     // input n-process
     string ms = "";
     int n_process = input<int>("Enter number of process: ",ms,false);
@@ -88,6 +107,7 @@ int main(){
     }
     label();
     table.print();
+    conts();
     // process_table.print();
     Table process_table;
     process_table.push_header("");
@@ -132,7 +152,7 @@ int main(){
 
         // process[i].tat = tat;
         // process[i].wt = wt;
-        int colidx = process_table.rowSize();
+        int colidx = table.rowSize();
         table.edit_col(i+1,colidx-3,to_string(process[i].completion_time));
         table.edit_col(i+1,colidx-2,to_string(tat));
         table.edit_col(i+1,colidx-1,to_string(wt));
