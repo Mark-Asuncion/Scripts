@@ -264,6 +264,11 @@ class Table{
         rows.push_back(nrow);
     }
     void push_col(vct col){
+        if(header.empty()) {
+            push_header(col[0]);
+            for(int i=1;i<col.size();i++){ push_row({col[i]}); }
+            return;
+        }
         if(col.size() != rows.size() + 1) col.resize(rows.size()+1);
         header.push_back(col[0]);
         color_header.push_back("");
@@ -273,6 +278,11 @@ class Table{
         }
     }
     void push_col(vct color,vct col){
+        if(header.empty()) {
+            push_header(col[0],color[0]);
+            for(int i=1;i<col.size();i++){ push_row({col[i]},{color[i]}); }
+            return;
+        }
         if(col.size() != rows.size() + 1) col.resize(rows.size()+1);
         if(color.size() != col.size()) color.resize(col.size());
         header.push_back(col[0]);
@@ -388,7 +398,6 @@ class Table{
         std::cout << '+' <<std::setfill('-') << std::setw((width+1) * header.size() + x.size()) << ""<< '+'<<std::endl;
     }
 };
-
 namespace Memory{
 #define NOTHING 0
 #define WAIT 1
@@ -536,6 +545,7 @@ class Manager{
         int id;
         int arrival_time;
         int burst_time;
+        int remaining_time;
         int completion_time;
         // int tat;
         // int wt;
