@@ -27,16 +27,16 @@ where <T as std::str::FromStr>::Err: std::fmt::Debug {
     if err_code == 0 {
         return input(message,n);
     }
-    let str_input: Vec<&str> = str_input.trim().split(|n| {
+    let tokens: Vec<&str> = str_input.trim().split(|n| {
         n == ' ' || n == '\n'
     })
         .collect();
-    if str_input[0] == "" {
+    if tokens[0] == "" {
         println!("Invalid Input, input is whitespace");
         cont();
         return input(message,n);
     }
-    *n = str_input[0].parse().unwrap();
+    *n = tokens[0].parse().unwrap();
 }
 use std::vec::Vec;
 pub mod color {
@@ -115,18 +115,15 @@ impl Table {
             width: 10,
         }
     }
-    pub fn col_size(&self) -> usize { self.data.len() }
-    pub fn row_size(&self) -> isize {
+    pub fn row_size(&self) -> usize { self.data.len() }
+    pub fn col_size(&self) -> isize {
         match self.data.get(0) {
             Some(n) => n.len() as isize,
             None => -1,
         }
     }
     fn resize(&mut self) {
-        let rowsize: usize = match self.row_size() {
-            i => i as usize,
-            -1 => return (),
-        };
+        let rowsize: usize = self.row_size();
         for i in &mut self.data {
             if i.len() == rowsize { continue; }
             i.resize(rowsize,Cell::nempty());
@@ -158,7 +155,7 @@ impl Table {
         let mut res = String::new();
         let top = {
             res.push('┌');
-            for i in 0..(self.row_size()-1) as usize {
+            for i in 0..(self.col_size()-1) as usize {
                 res.push_str(border.as_str());
                 res.push('┬');
             }
@@ -169,7 +166,7 @@ impl Table {
         let bot = {
             let mut res = String::new();
             res.push('└');
-            for i in 0..(self.row_size()-1) as usize {
+            for i in 0..(self.col_size()-1) as usize {
                 res.push_str(border.as_str());
                 res.push('┴');
             }
@@ -177,10 +174,10 @@ impl Table {
             res.push('┘');
             res
         };
-        let middle = {
-            let mut res = bot.clone();
+        let mid = {
+            let mut res = String::new();
             res.push('├');
-            for i in 0..(self.row_size()-1) as usize {
+            for i in 0..(self.col_size()-1) as usize {
                 res.push_str(border.as_str());
                 res.push('┼');
             }
@@ -214,15 +211,18 @@ impl Table {
         };
         println!("{top}");
         let mut line = String::new();
+        let mut count: usize = 1;
         for row in &self.data {
             line.push('│');
             for col in row {
-                // TODO use middle
                 line.push_str(create_cell(&col).as_str());
                 line.push('│');
             }
-            println!("{line}\n{bot}");
+            let mut b: &String = &mid;
+            if count >= self.row_size() as usize { b = &bot; }
+            println!("{}\n{}",line,*b);
             line.clear();
+            count+=1;
         }
     }
 }

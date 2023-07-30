@@ -6,7 +6,7 @@ fn test_table() {
     let fore_green: &str = color::BOLD_FORE_GREEN;
     let cell: Vec<Cell> = vec![Cell::new("Hello",fore_green),Cell::new("Test",fore_green), Cell::new("asjdhaskjdhaksjhdk",fore_green)];
     let mut table = Table::new(cell);
-    let cell: Vec<Vec<Cell>> = vec![vec![Cell::new("Col1",fore_green),Cell::new("Col2",fore_green), Cell::new("Col3",fore_green)],vec![Cell::new("Hello",fore_green),Cell::new("Test",fore_green)],vec![Cell::new("Hello",fore_green)]];
+    let cell: Vec<Vec<Cell>> = vec![vec![Cell::new("Col1",""),Cell::new("Col2",""), Cell::new("Col3","")],vec![Cell::new("Hello",""),Cell::new("Test","")],vec![Cell::new("Hello","")]];
     table.push(cell);
     // table.dbg();
     table.print();
@@ -19,6 +19,6 @@ fn test_input() {
     dbg!(&x);
 }
 fn main() {
-    test_input();
-    // test_table();
+    // test_input();
+    test_table();
 }
