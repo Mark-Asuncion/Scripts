@@ -1,21 +1,24 @@
 #![allow(unused)]
 mod ccs2203;
-use ccs2203::{ color, Format, Table, };
+use ccs2203::{ color, Format, Cell, Table, };
 
 fn test_table() {
-    let mut x = Table::new(vec![String::from("Hello")],color::BOLD_FORE_GREEN.to_string());
-    {
-        let body: Vec<Vec<String>> = vec![ vec![String::from("Hello"),String::from("test")] ];
-        x.push_body(body,None);
-    }
-    // println!("┌─┬─┐");
-    // println!("│ │ │");
-    // println!("├─┼─┤");
-    // println!("│ │ │");
-    // println!("└─┴─┘");
+    let fore_green: &str = color::BOLD_FORE_GREEN;
+    let cell: Vec<Cell> = vec![Cell::new("Hello",fore_green),Cell::new("Test",fore_green), Cell::new("asjdhaskjdhaksjhdk",fore_green)];
+    let mut table = Table::new(cell);
+    let cell: Vec<Vec<Cell>> = vec![vec![Cell::new("Col1",fore_green),Cell::new("Col2",fore_green), Cell::new("Col3",fore_green)],vec![Cell::new("Hello",fore_green),Cell::new("Test",fore_green)],vec![Cell::new("Hello",fore_green)]];
+    table.push(cell);
+    // table.dbg();
+    table.print();
+}
+fn test_input() {
+    let mut x: i32 = 5;
+    dbg!(&x);
+    let msg = "Enter a number:";
+    ccs2203::input(msg,&mut x);
+    dbg!(&x);
 }
 fn main() {
-    let x: i32 = 5;
-    let msg = "Enter a number:";
-    let x = ccs2203::input(x,msg).unwrap();
+    test_input();
+    // test_table();
 }

@@ -1,7 +1,17 @@
 #![allow(unused)]
 
 use std::io::Write;
-pub fn input<T:std::ops::Add + std::str::FromStr + std::fmt::Debug>(n: T,message: &str) -> Option<T>
+pub fn clrscr() {
+    println!("\x1B[2J\x1B[H");
+}
+pub fn cont() {
+    print!("Press any key to continue...");
+    std::io::stdout().flush().unwrap();
+    let mut str_input = String::new();
+    std::io::stdin().read_line(&mut str_input);
+    std::io::stdout().flush().unwrap();
+}
+pub fn input<T:std::ops::Add + std::str::FromStr + std::fmt::Debug>(message: &str,n: &mut T) 
 where <T as std::str::FromStr>::Err: std::fmt::Debug {
     print!("{message} ");
     std::io::stdout().flush().unwrap();
@@ -14,17 +24,19 @@ where <T as std::str::FromStr>::Err: std::fmt::Debug {
             0
         },
     };
-    if err_code == 0 { return input(n,message); }
+    if err_code == 0 {
+        return input(message,n);
+    }
     let str_input: Vec<&str> = str_input.trim().split(|n| {
-        if n == ' ' || n == '\n' {
-            return true;
-        }
-        false
+        n == ' ' || n == '\n'
     })
         .collect();
-    if str_input[0] == "" { println!("Invalid Input, input is whitespace"); return input(n,message) }
-    let res: T = str_input[0].parse().unwrap();
-    Some(res)
+    if str_input[0] == "" {
+        println!("Invalid Input, input is whitespace");
+        cont();
+        return input(message,n);
+    }
+    *n = str_input[0].parse().unwrap();
 }
 use std::vec::Vec;
 pub mod color {
@@ -38,13 +50,10 @@ pub mod color {
     pub const FORE_CYAN_BACK_GREEN: &str = "\x1B[1;36;42m";
     pub const FORE_CYAN_BACK_RED: &str = "\x1B[1;36;41m";
     pub const FORE_RED: &str = "\x1B[0;31m";
-    pub const FORE_GREEN: &str = "\x1B[0;32m";
-    pub const FORE_YELLOW: &str = "\x1B[0;33m";
+    pub const FORE_GREEN: &str = "\x1B[0;32m"; pub const FORE_YELLOW: &str = "\x1B[0;33m";
 }
 
-pub struct Format {
-    ss: String,
-}
+pub struct Format;
 impl Format {
     pub fn truncate(val: f64, length: i32) -> f64 {
         let whole_number = val.floor() as i32 as f64;
@@ -61,91 +70,79 @@ impl Format {
     }
 }
 
+#[derive(Debug)]
+pub struct Cell {
+    val: String,
+    color: String,
+}
+impl Cell {
+    pub fn nempty() -> Cell {
+        Cell {
+            val: String::new(),
+            color: String::new(),
+        }
+    }
+    pub fn new(val: &str,color: &str) -> Cell {
+        Cell {
+            val: val.to_string(),
+            color: color.to_string(),
+        }
+    }
+}
+impl std::clone::Clone for Cell {
+    fn clone(&self) -> Self {
+        Cell {
+            val: self.val.clone(),
+            color: self.color.clone(),
+        }
+    }
+}
 pub struct Table {
-    header: Vec<String>,
-    header_color: Vec<String>,
-    body: Vec<Vec<String>>,
-    body_color: Vec<Vec<String>>,
+    data: Vec<Vec<Cell>>,
+    pub width: usize,
 }
 impl Table {
-    pub fn new(header: Vec<String>,mheader_color: String) -> Table {
+    pub fn dbg(&self) {
+        dbg!(&self.data);
+    }
+    pub fn new(val: Vec<Cell>) -> Table {
         Table {
-            header_color: {
-                let mut x: Vec<String> = Vec::new();
-                x.resize(header.len(),mheader_color);
+            data: {
+                let mut x: Vec<Vec<Cell>> = Vec::new();
+                x.push(val);
                 x
             },
-            header,
-            body: Vec::new(),
-            body_color: Vec::new(),
+            width: 10,
         }
     }
-    pub fn get_col(&self) -> usize { self.header.len() }
-    pub fn get_row(&self) -> usize { self.body.len() }
+    pub fn col_size(&self) -> usize { self.data.len() }
+    pub fn row_size(&self) -> isize {
+        match self.data.get(0) {
+            Some(n) => n.len() as isize,
+            None => -1,
+        }
+    }
     fn resize(&mut self) {
-        let col: usize = self.get_col();
-        for i in 0..self.get_row() {
-            if self.body[i].len() <= col { continue; }
-            self.body[i].resize(col,String::from(""));
-            self.body_color[i].resize(col,String::from(""));
+        let rowsize: usize = match self.row_size() {
+            i => i as usize,
+            -1 => return (),
+        };
+        for i in &mut self.data {
+            if i.len() == rowsize { continue; }
+            i.resize(rowsize,Cell::nempty());
         }
     }
-    pub fn push_header(&mut self, mut val: Vec<String>, color: Option< Vec<String> >) {
-        self.header.append(&mut val);
-        match color {
-            Some(mut i) => {
-                self.header_color.append(&mut i);
-            },
-            None => {
-                self.header_color.resize(self.header.len(),String::from(""));
-            },
+    pub fn push(&mut self, new_data: Vec<Vec<Cell>>) {
+        let new_data_colsize: isize = match new_data.get(0) {
+            Some(n) => n.len() as isize,
+            None => -1,
         };
-        dbg!(&self.header);
-        dbg!(&self.header_color);
-    }
-    pub fn push_body(&mut self, mut val: Vec<Vec<String>>, color: Option< Vec<Vec<String>> >) {
-        self.body.append(&mut val);
-        match color {
-            Some(mut i) => {
-                self.body_color.append(&mut i);
-            },
-            None => {
-                let mut x: Vec<String> = Vec::new();
-                x.resize(self.body[0].len(),String::from(""));
-                self.body_color.resize(self.header.len(),x);
-            },
-        };
+        if new_data_colsize == - 1 { return (); }
+        for i in new_data { self.data.push(i); }
         self.resize();
-        dbg!(&self.body);
-        dbg!(&self.body_color);
     }
-    pub fn edit_header(&mut self, column: usize, val: String, color: Option<String>) {
-        eprintln!("before edit");
-        dbg!(&self.header);
-        dbg!(&self.header_color);
-        if column >= self.header.len() { return; }
-        self.header[column] = val;
-        match color {
-            Some(i) => { self.header_color[column] = i; },
-            _ => (),
-        }
-        eprintln!("after edit");
-        dbg!(&self.header);
-        dbg!(&self.header_color);
-    }
-    pub fn edit_body(&mut self,row: usize, column: usize, val: String, color: Option<String>) {
-        eprintln!("before edit");
-        dbg!(&self.body);
-        dbg!(&self.body_color);
-        if row >= self.get_row() || column >= self.get_col() { return; }
-        self.body[row][column] = val;
-        match color {
-            Some(i) => { self.body_color[row][column] = i; },
-            _ => (),
-        }
-        eprintln!("after edit");
-        dbg!(&self.body);
-        dbg!(&self.body_color);
+    pub fn push_col(&mut self,new_col: Vec<Cell>) {
+        ()
     }
     pub fn print(&self) {
         // ┌─┬─┐
@@ -153,6 +150,79 @@ impl Table {
         // ├─┼─┤
         // │ │ │
         // └─┴─┘
-        println!("print()");
+        let border = {
+            let mut res = String::new();
+            for i in 0..self.width { res.push('─'); }
+            res
+        };
+        let mut res = String::new();
+        let top = {
+            res.push('┌');
+            for i in 0..(self.row_size()-1) as usize {
+                res.push_str(border.as_str());
+                res.push('┬');
+            }
+            res.push_str(border.as_str());
+            res.push('┐');
+            res
+        };
+        let bot = {
+            let mut res = String::new();
+            res.push('└');
+            for i in 0..(self.row_size()-1) as usize {
+                res.push_str(border.as_str());
+                res.push('┴');
+            }
+            res.push_str(border.as_str());
+            res.push('┘');
+            res
+        };
+        let middle = {
+            let mut res = bot.clone();
+            res.push('├');
+            for i in 0..(self.row_size()-1) as usize {
+                res.push_str(border.as_str());
+                res.push('┼');
+            }
+            res.push_str(border.as_str());
+            res.push('┤');
+            res
+        };
+
+        let create_cell = |cell: &Cell| -> String {
+            let val = &cell.val;
+            let color = &cell.color;
+            let mut res = String::new();
+            if val.len() >= self.width {
+                res.push_str(&format!(" {}{}{}... ",color.as_str(),&val[..(self.width-5)],color::NORMAL));
+                return res;
+            }
+            let leftpad = {
+                let mut res = String::new();
+                let size = (self.width - val.len()) / 2 as usize;
+                for i in 0..size { res.push(' '); }
+                res
+            };
+            let rightpad = {
+                let mut res = String::new();
+                let size = self.width - (leftpad.len() + val.len());
+                for i in 0..size { res.push(' '); }
+                res
+            };
+            res.push_str(&format!("{}{}{}{}{}",leftpad.as_str(),color.as_str(),val.as_str(),color::NORMAL,rightpad.as_str()));
+            res
+        };
+        println!("{top}");
+        let mut line = String::new();
+        for row in &self.data {
+            line.push('│');
+            for col in row {
+                // TODO use middle
+                line.push_str(create_cell(&col).as_str());
+                line.push('│');
+            }
+            println!("{line}\n{bot}");
+            line.clear();
+        }
     }
 }
