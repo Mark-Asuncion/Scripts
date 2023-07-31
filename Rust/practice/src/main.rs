@@ -8,6 +8,7 @@ fn test_table() {
     let mut table = Table::new(cell);
     let cell: Vec<Vec<Cell>> = vec![vec![Cell::new("Col1",""),Cell::new("Col2",""), Cell::new("Col3","")],vec![Cell::new("Hello",""),Cell::new("Test","")],vec![Cell::new("Hello","")]];
     table.push(cell);
+    table.width = 20;
     // let cell : Vec<Cell> = vec![ Cell::new("Col1",""),Cell::new("Col2",""), Cell::new("Col3","") ];
     // table.push_col(cell);
     // table.dbg();

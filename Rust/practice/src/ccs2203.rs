@@ -271,11 +271,11 @@ pub mod mem {
         NotAllocated,
     }
     pub struct Job{
-        pub size: f64,
-        pub name: String,
-        pub id: usize,
-        pub tat: usize,
-        pub status: State,
+        size: f64,
+        name: String,
+        id: usize,
+        tat: usize,
+        status: State,
     }
     impl Job {
         pub fn new(size: f64,name: &str, id: usize, tat: usize, status: State) -> Job {
@@ -294,10 +294,10 @@ pub mod mem {
         }
     }
     pub struct Partition<'a> {
-        pub name: String,
-        pub id: usize,
-        pub size: f64,
-        pub job: &'a Job,
+        name: String,
+        id: usize,
+        size: f64,
+        job: &'a Job,
     }
     impl<'a> Partition<'a> {
         pub fn new(name: &str,id: usize,size: f64,job: &'a Job) -> Partition<'a> {
