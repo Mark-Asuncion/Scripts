@@ -123,10 +123,14 @@ impl Table {
         }
     }
     fn resize(&mut self) {
-        let rowsize: usize = self.row_size();
+        let colsize: isize = self.col_size();
+        if colsize == -1 {
+            return ();
+        }
+        let colsize = colsize as usize;
         for i in &mut self.data {
-            if i.len() == rowsize { continue; }
-            i.resize(rowsize,Cell::nempty());
+            if i.len() == colsize { continue; }
+            i.resize(colsize,Cell::nempty());
         }
     }
     pub fn push(&mut self, new_data: Vec<Vec<Cell>>) {
@@ -138,8 +142,41 @@ impl Table {
         for i in new_data { self.data.push(i); }
         self.resize();
     }
-    pub fn push_col(&mut self,new_col: Vec<Cell>) {
-        ()
+    pub fn push_col(&mut self,col: Vec<Cell>) {
+        let mut it = col.iter();
+        for row in &mut self.data {
+            let cell = match it.next() {
+                Some(i) => i,
+                None => break,
+            };
+            row.push(cell.clone());
+        }
+        self.resize();
+    }
+    pub fn edit(&mut self,row: usize,col: usize,new_val: Option<&str>, new_color: Option<&str>) {
+        let new_val = match new_val {
+            Some(i) => i,
+            None => "",
+        };
+        let new_color = match new_color {
+            Some(i) => i,
+            None => "",
+        };
+        let row = match self.data.get_mut(row) {
+            Some(i) => i,
+            None => return (),
+        };
+        match row.get_mut(col) {
+            Some(mut i) => {
+                if !new_val.is_empty() {
+                    i.val = new_val.to_string();
+                }
+                if !new_color.is_empty() {
+                    i.color = new_color.to_string();
+                }
+            },
+            None => return (),
+        }
     }
     pub fn print(&self) {
         // ┌─┬─┐
@@ -223,6 +260,58 @@ impl Table {
             println!("{}\n{}",line,*b);
             line.clear();
             count+=1;
+        }
+    }
+}
+pub mod mem {
+    pub enum State {
+        Nothing,
+        Wait,
+        Allocated,
+        NotAllocated,
+    }
+    pub struct Job{
+        pub size: f64,
+        pub name: String,
+        pub id: usize,
+        pub tat: usize,
+        pub status: State,
+    }
+    impl Job {
+        pub fn new(size: f64,name: &str, id: usize, tat: usize, status: State) -> Job {
+            Job {
+                size,
+                name: name.to_string(),
+                id,
+                tat,
+                status,
+            }
+        }
+        pub fn name(&self) -> String {
+            let mut res = String::new();
+            res.push_str(&format!("{}{}",self.name,self.id));
+            res
+        }
+    }
+    pub struct Partition<'a> {
+        pub name: String,
+        pub id: usize,
+        pub size: f64,
+        pub job: &'a Job,
+    }
+    impl<'a> Partition<'a> {
+        pub fn new(name: &str,id: usize,size: f64,job: &'a Job) -> Partition<'a> {
+            Partition {
+                name: name.to_string(),
+                id,
+                size,
+                job,
+            }
+        }
+        pub fn name(&self) -> String {
+            let mut res = String::new();
+            res.push_str(&format!("{}{}",self.name,self.id));
+            res
         }
     }
 }
