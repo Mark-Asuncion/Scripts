@@ -13,18 +13,19 @@ out_file = "toc-" + md_file.strip()
 output = "Table of Contents\n"
 orig_content = ""
 
-def get_line_and_check_space(line: str,ptr: int) -> Tuple[str,bool] | None:
+def get_line_and_check_space(line: str) -> Tuple[str,bool] | None:
     if not line:
         return None
     ret = ""
+    ptr = 0
     hasSpace = False
-    while not line[ptr] == '\n':
+    while ptr < len(line):
+        if line[ptr] == '\n':
+            break
         if line[ptr] == ' ':
             hasSpace = True
         ret+=line[ptr]
         ptr+=1
-        if not ptr < len(line):
-            break
     return (ret,hasSpace)
 
 with open(f"{cwd}/{md_file}") as file:
@@ -37,7 +38,7 @@ with open(f"{cwd}/{md_file}") as file:
             ptr = 1
             while  line[ptr] == '#':
                 ptr+=1
-            res = get_line_and_check_space(line,ptr)
+            res = get_line_and_check_space(line[ptr:].strip())
             if not res:
                 continue
 
