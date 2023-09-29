@@ -17,9 +17,8 @@
 using namespace std;
 
 
-void clrscr(){
-    std::cout << "\x1B[2J\x1B[H";
-}
+void clrscr()
+{ std::cout << "\x1B[2J\x1B[H"; }
 
 struct Point
 {
@@ -44,12 +43,6 @@ bool operator==(const Point& a,const Point& b)
 // syntax sugar
 using Cluster = vector<Point*>;
 using Points = vector<Point>;
-
-namespace errors
-{
-const char* NO_ARGS = "Error:: No arguments";
-const char* FILE_DOES_NOT_EXIST = "Error:: File does not exist";
-}
 
 namespace Color
 {
@@ -210,8 +203,6 @@ bool solve(
 }
 }
 
-filesystem::path getcwd() { return filesystem::current_path(); }
-
 fstream* file_open(string& filename)
 {
     return new fstream(filename, fstream::in);
@@ -230,7 +221,7 @@ void file_input(string& filename)
 {
     fstream* input_file = file_open(filename);
     if (input_file->fail()) {
-        cout << Color::BOLD_FORE_RED << errors::FILE_DOES_NOT_EXIST << Color::NORMAL << endl;
+        cout << Color::BOLD_FORE_RED << "Error:: File does not exist" << Color::NORMAL << endl;
         return;
     }
     string line;
@@ -357,7 +348,7 @@ int main(int argc, char* argv[])
 {
     if(argc > 1)
     {
-        string file = string(getcwd()) + '/' + argv[argc-1];
+        string file = string(filesystem::current_path()) + '/' + argv[argc-1];
         file_input(file);
     }
     else
