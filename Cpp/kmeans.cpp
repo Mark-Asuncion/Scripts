@@ -1,4 +1,10 @@
 // Compile with -std=c++17 flag
+/* Format of Input File (# = floating number)
+ * # #
+ * # #
+ * # #
+*/
+
 #include <ios>
 #include <iostream>
 #include <filesystem>
@@ -33,9 +39,6 @@ struct Centroid
     // vector<Point*> points;
     vector<double> distance;
 };
-
-bool operator==(const Centroid& a,const Point& b)
-{ return a.c->name == b.name && a.c->x == b.x && a.c->y == b.y; }
 
 bool operator==(const Point& a,const Point& b)
 { return a.x == b.x && a.y == b.y && a.name == b.name; }
@@ -179,7 +182,7 @@ bool solve(
     using namespace kmeans;
     for (auto& it : points)
     {
-        if (ce_a == it || ce_b == it) continue;
+        if (*ce_a.c == it || *ce_b.c == it) continue;
         ce_a.distance.push_back( manhattan_distance(*ce_a.c, it) );
         ce_b.distance.push_back( manhattan_distance(*ce_b.c, it) );
         consider_points.push_back(&it);
