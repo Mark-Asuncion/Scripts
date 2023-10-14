@@ -1,5 +1,7 @@
 #include <iostream>
 #include <vector>
+#include <limits.h>
+#include <cstring>
 using namespace std;
 
 typedef vector<int> vint;
@@ -71,6 +73,67 @@ void sort012(int a[], int n)
         k[f[i]]++;
     }
 }
+
+int getMax(vector<int>& input)
+{
+    int m = INT_MIN;
+    for (auto& i : input)
+        m = max(i,m);
+    return m;
+}
+
+void countSort(vector<int>& arr, int d)
+{
+    vector<int> out(arr.size(),0);
+    int count[10] = {0};
+    int i=0;
+    // count occurences
+    for (auto& j: arr)
+    {
+        count[( j / d ) % 10]++;
+        ++i;
+    }
+
+    // obtain cumulative sum
+    for(i=1;i<10;++i)
+        count[i] += count[i-1];
+
+    // shift right
+    for(i=9;i>=1;--i)
+        count[i] = count[i-1];
+    count[0] = 0;
+
+    for(auto& j: arr)
+    {
+        out[count[( j / d ) % 10]] = j;
+        count[( j / d ) % 10]++;
+    }
+
+    for(i=0;i<arr.size();++i)
+        arr[i] = out[i];
+}
+
+void radix(vector<int>& arr)
+{
+    int m = getMax(arr);
+    for(int i=1; m / i > 0;i*=10)
+        countSort(arr,i);
+}
+
+void print(vector<int>& arr)
+{
+    cout << "{ ";
+    for (auto& i: arr)
+        cout << i << ' ';
+    cout << '}' << endl;
+}
+void print(int arr[], int size)
+{
+    cout << "{ ";
+    for(int i=0;i<size;i++)
+        cout << arr[i] << ' ';
+    cout << '}' << endl;
+}
 int main()
 {
     // vint x = {5,42,12,4,2,1,4};
@@ -79,12 +142,37 @@ int main()
     // for(auto i : x){
     // 	cout << i << " ";
     // }
-    // int cs[5] = {2,1,0,1,0};
-    int cs[5] = {0,2,1,2,0};
-    sort012(cs,5);
-    for(int i=0;i<5;i++){
-        cout << cs[i] << " ";
-    }
+    cout << "Count Sort (0,1,2)" << endl;
+    int csin1[5] = {0,2,1,2,0};
+    int csin2[5] = {2,1,0,1,0};
+    cout << "Input 1" << endl;
+    print(csin1,5);
+    sort012(csin1,5);
+    print(csin1,5);
+    cout << "Input 2" << endl;
+    print(csin2,5);
+    sort012(csin2,5);
+    print(csin2,5);
+    cout << string(10,'=') << endl;
 
+    cout << "Radix Sort" << endl;
+    vector<int> radix1{ 543, 986, 217, 765, 329 };
+    vector<int> radix2{ 170, 45, 75, 90, 802, 24, 2, 66 };
+    vector<int> radix3{ 232, 45, 32, 90, 1032, 24, 0, 88 };
+    cout << "Input 1" << endl;
+    print(radix1);
+    radix(radix1);
+    print(radix1);
+
+    cout << "Input 2" << endl;
+    print(radix2);
+    radix(radix2);
+    print(radix2);
+
+    cout << "Input 3" << endl;
+    print(radix3);
+    radix(radix3);
+    print(radix3);
+    cout << string(10,'=') << endl;
     return 0;
 }
