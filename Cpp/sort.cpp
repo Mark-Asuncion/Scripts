@@ -4,9 +4,9 @@
 #include <cstring>
 using namespace std;
 
-typedef vector<int> vint;
 struct MergeSort{
-    vint sort(vint val){
+    typedef vector<int> vint;
+    static vint sort(vint& val){
         if (val.size() == 1){
             return val;
         }
@@ -22,7 +22,7 @@ struct MergeSort{
         second_half = sort(second_half);
         return  merge(first_half,second_half);
     }
-    vint merge(vint first_half, vint second_half){
+    static vint merge(vint first_half, vint second_half){
         int idx1 = 0;
         int idx2 = 0;
         vint ret;
@@ -136,12 +136,13 @@ void print(int arr[], int size)
 }
 int main()
 {
-    // vint x = {5,42,12,4,2,1,4};
-    // MergeSort a;
-    // x = a.sort(x);
-    // for(auto i : x){
-    // 	cout << i << " ";
-    // }
+    cout << "Merge Sort" << endl;
+    vector<int> merge1 = {5,42,12,4,2,1,4};
+    print(merge1);
+    merge1 = MergeSort::sort(merge1);
+    print(merge1);
+    cout << string(10,'=') << endl;
+
     cout << "Count Sort (0,1,2)" << endl;
     int csin1[5] = {0,2,1,2,0};
     int csin2[5] = {2,1,0,1,0};
