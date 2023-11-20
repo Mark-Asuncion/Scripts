@@ -1,27 +1,10 @@
-// Compile with -std=c++17 flag
-/* Format of Input File (# = floating number)
- * # #
- * # #
- * # #
-*/
-
-#include <ios>
+#include <cmath>
 #include <iostream>
-#include <filesystem>
-#include <fstream>
-#include <limits>
-#include <numeric>
-#include <random>
-#include <string>
-#include <sstream>
 #include <cassert>
-#include <tuple>
-#include <utility>
 #include <vector>
-#include <limits.h>
-#include <algorithm>
+#include <sstream>
+#include <limits>
 using namespace std;
-
 
 void clrscr()
 { std::cout << "\x1B[2J\x1B[H"; }
@@ -31,29 +14,46 @@ struct Point
     string name;
     double x;
     double y;
+
+    string info()
+    {
+        stringstream ss;
+        ss << name << ' ' << x << ' ' << y;
+        return ss.str();
+    }
 };
 
 struct Centroid
 {
-    Point* c;
-    // vector<Point*> points;
+    Point p;
     vector<double> distance;
 };
 
-bool operator==(const Point& a,const Point& b)
-{ return a.x == b.x && a.y == b.y && a.name == b.name; }
-
-// syntax sugar
 using Cluster = vector<Point*>;
+using Clusters = vector<Cluster>;
 using Points = vector<Point>;
+using Centroids = vector<Centroid>;
+
+void print(Centroids& ce, Clusters& val)
+{
+    for (int i=0;i<ce.size();i++)
+    {
+        cout << ce.at(i).p.info();
+        cout << '\n';
+        if (val.empty()) continue;
+        for (auto& j: val.at(i))
+        {
+            cout << "\n\t" << j->info();
+        }
+        cout << '\n';
+    }
+}
 
 namespace Color
 {
     const char* NORMAL  = "\x1B[0m";
     const char* BOLD = "\x1B[1m";
     const char* BOLD_FORE_RED  = "\x1B[1;31m";
-    const char* BOLD_FORE_GREEN = "\x1B[1;32m";
-    const char* BOLD_FORE_YELLOW  = "\x1B[1;33m";
 }
 
 struct Cell
@@ -64,299 +64,341 @@ struct Cell
 };
 
 class Table
+{
+public:
+    using Row = vector<Cell>;
+    using Column = vector< Row >;
+private:
+    Column table;
+    int width=10;
+    string center(Cell& a)
     {
-    public:
-        using Row = vector<Cell>;
-        using Column = vector< vector<Cell> >;
-    private:
-        Column table;
-        int width=15;
-        string center(Cell& a)
-        {
-            if (a.value.size() >= width) return a.print();
-            int pad = width - a.value.size();
-            int leftpad = pad / 2;
-            return string(leftpad,' ') + a.print() + string(pad-leftpad,' ');
-        }
-    public:
-        Column::size_type column_size() { return table.size(); }
-        Row::size_type row_size() { return (!table.empty())? table[0].size():0; }
-        void push_row(Row&& a)
-        {
-            if (a.size() < row_size() || a.size() > row_size() && row_size() != 0) a.resize(row_size());
-            table.push_back( Row(a) );
-        }
-        void push_col(Row&& a)
-        {
-            Column::iterator table_it = table.begin();
-            if (a.size() < column_size() || a.size() > column_size() && column_size() != 0) a.resize(column_size());
-            Row::iterator a_it = a.begin();
+        if (a.value.size() >= width) return a.print();
+        int pad = width - a.value.size();
+        int leftpad = pad / 2;
+        return string(leftpad,' ') + a.print() + string(pad-leftpad,' ');
+    }
+public:
+    Column::size_type rows_size() { return table.size(); }
+    Row::size_type column_size() { return (!table.empty())? table[0].size():0; }
+    void push_row(Row& a)
+    {
+        if (a.size() != column_size() && column_size() != 0) a.resize(column_size());
+        table.push_back( std::move(a) );
+    }
+    void push_col(Row& a)
+    {
+        Column::iterator table_it = table.begin();
+        if (a.size() != rows_size() && rows_size() != 0)
+            a.resize(rows_size());
+        Row::iterator a_it = a.begin();
 
-            assert(a.size() == table.size());
-
-            while (table_it != table.end() && a_it != a.end())
-            {
-                table_it->push_back(*a_it);
-                table_it++;
-                a_it++;
-            }
-        }
-        void print()
+        while (table_it != table.end() && a_it != a.end())
         {
-            string line;
-            auto sep = [=](string& line)
-                {
-                    line += '+';
-                    for (int i=0;i<row_size();i++)
-                    {
-                        line += string(width,'-') + '+';
-                    }
-                };
-            for (auto& curr_row: table)
-            {
-                sep(line);
-                line += "\n|";
-                for (int i=0;i<row_size();i++)
-                {
-                    line += center( curr_row.at(i) ) + Color::NORMAL + '|';
-                }
-                line += "\n";
-            }
+            table_it->push_back(*a_it);
+            table_it++;
+            a_it++;
+        }
+    }
+    void print()
+    {
+        string line;
+        auto sep = [=](string& line)
+        {
+            line += '+';
+            for (int i=0;i<column_size();i++)
+                line += string(width,'-') + '+';
+        };
+        for (auto& curr_row: table)
+        {
             sep(line);
-            cout << line << endl;
+            line += "\n|";
+            for (int i=0;i<column_size();i++)
+            {
+                line += center( curr_row.at(i) ) + Color::NORMAL + '|';
+            }
+            line += "\n";
         }
-    };
+        sep(line);
+        cout << line << endl;
+    }
+};
 
 namespace kmeans
 {
 double manhattan_distance(Point& a,Point& b)
-{
-    double x = (a.x - b.x);
-    double y = (a.y - b.y);
-    return ( (x < 0)? -x:x ) + ( (y < 0)? -y:y );
-}
-
-bool is_equal_to_prev(Cluster& a,Cluster& b,Cluster& prev_a, Cluster& prev_b)
-{ return (a==prev_a) && (b==prev_b); }
+{ return abs(a.x - b.x) + abs(a.y - b.y); }
 
 double round_trunc(double v)
-{ return (double) (int) round(v * 10.0) / 10.0; }
+{ return ( (double) ( (int) round(v * 10.0) ) ) / 10.0; }
 
-void new_centroid_from(Centroid& ce,Cluster& cl)
+void new_centroid_from(Centroid& ce, Cluster& cl)
 {
-    double sum_x = 0, sum_y = 0, divisor = cl.size();
+    if (cl.empty()) return;
+    double mSumX = 0;
+    double mSumY = 0;
     for (auto& it: cl)
     {
-        sum_x += it->x;
-        sum_y += it->y;
+        mSumX += it->x;
+        mSumY += it->y;
     }
-    if (ce.c->name.empty()) { delete ce.c; }
-    double ave_a = (cl.empty())? 0:sum_x/divisor;
-    double ave_b = (cl.empty())? 0:sum_y/divisor;
-    ce.c = new Point{
-        .name="",
-        .x = round_trunc( ave_a ),
-        .y = round_trunc( ave_b )
-    };
+    double newX = 0.0;
+    double newY = 0.0;
+    newX = round_trunc( mSumX / cl.size() );
+    newY = round_trunc( mSumY / cl.size() );
+
+    if (!ce.p.name.empty())
+        ce.p.name = "";
+    ce.p.x = newX;
+    ce.p.y = newY;
 }
 
 bool solve(
     Points& points,
-    Cluster& cl_a,
-    Cluster& cl_b,
-    Cluster& prev_cl_a,
-    Cluster& prev_cl_b,
-    Centroid& ce_a,
-    Centroid& ce_b
+    Centroids& centroids,
+    Clusters& cl,
+    Clusters& prevCl,
+    Table& table
 )
 {
-    if (!cl_a.empty()) prev_cl_a = std::move(cl_a);
-    if (!cl_b.empty()) prev_cl_b = std::move(cl_b);
-    if (!ce_a.distance.empty() && !ce_b.distance.empty())
+    for (auto& ce: centroids)
     {
-        ce_a.distance.clear();
-        ce_b.distance.clear();
+        ce.distance.clear();
+        for (auto& p: points)
+        {
+            double dist = manhattan_distance(ce.p, p);
+            ce.distance.emplace_back(round_trunc( dist ));
+        }
     }
+    if (!cl.empty())
+        prevCl = std::move(cl);
+    cl.resize(centroids.size());
 
-    Cluster consider_points;
-    using namespace kmeans;
-    for (auto& it : points)
+    // cluster
+    for (int i=0;i<points.size();i++)
     {
-        if (*ce_a.c == it || *ce_b.c == it) continue;
-        ce_a.distance.push_back( manhattan_distance(*ce_a.c, it) );
-        ce_b.distance.push_back( manhattan_distance(*ce_b.c, it) );
-        consider_points.push_back(&it);
-    }
-
-    assert( ce_a.distance.size() == ce_b.distance.size() );
-    assert( ce_a.distance.size() == consider_points.size() &&
-           ce_b.distance.size() == consider_points.size());
-
-    if (points[0] == *ce_a.c) cl_a.push_back(&points[0]);
-    if (points[1] == *ce_b.c) cl_b.push_back(&points[1]);
-
-    for (int i=0;i<ce_a.distance.size();i++) {
-        if (ce_a.distance[i] > ce_b.distance[i]) cl_b.push_back(&(*consider_points[i]));
-        else cl_a.push_back(&(*consider_points[i]));
-    }
-    bool res = is_equal_to_prev(cl_a, cl_b, prev_cl_a, prev_cl_b);
-    new_centroid_from(ce_a,cl_a);
-    new_centroid_from(ce_b,cl_b);
-    return res;
-}
-}
-
-fstream* file_open(string& filename)
-{
-    return new fstream(filename, fstream::in);
-}
-
-tuple<double,double> parse_line(string& line)
-{
-    stringstream ss(line);
-    double x,y;
-    ss >> x >> y;
-    ss.ignore(numeric_limits<streamsize>::max());
-    return tuple(x,y);
-}
-
-void file_input(string& filename)
-{
-    fstream* input_file = file_open(filename);
-    if (input_file->fail()) {
-        cout << Color::BOLD_FORE_RED << "Error:: File does not exist" << Color::NORMAL << endl;
-        return;
-    }
-    string line;
-    int id = 1;
-    Points points;
-
-    while (getline(*input_file,line,'\n'))
-    {
-        tuple<double,double> xy = parse_line(line);
-        points.push_back(Point{
-            .name = "P" + to_string(id),
-            .x = get<0>(xy),
-            .y = get<1>(xy)
-        });
-        id++;
-    }
-    input_file->close();
-
-    Cluster cl_a;
-    Cluster cl_b;
-    Cluster prev_cl_a;
-    Cluster prev_cl_b;
-    Centroid ce_a { .c = &points[0] };
-    Centroid ce_b { .c = &points[1], };
-    Table table;
-    table.push_row({
-        Cell{ .color = Color::BOLD, .value = "Name" },
-        Cell{ .color = Color::BOLD, .value = "x" },
-        Cell{ .color = Color::BOLD, .value = "y" }
-    });
-    for (auto& it:points)
-    {
-        stringstream ss;
-        ss << it.x << ' ' << it.y;
-        string x,y;
-        ss >> x >> y;
-        table.push_row(
+        double pminDist = 10000.0;
+        int iMin = 0;
+        int ceMin = -1;
+        for(int j=0;j<centroids.size();j++)
+        {
+            double cDist = centroids.at(j).distance.at(i);
+            if (pminDist > cDist)
             {
-                Cell{ .color = Color::BOLD_FORE_GREEN, .value = it.name, },
-                Cell{ .color = "", .value = x },
-                Cell{ .color = "", .value = y }
+                pminDist = cDist;
+                iMin = i;
+                ceMin = j;
             }
-        );
+        }
+        assert(ceMin != -1);
+        cl.at(ceMin).push_back(&points.at(iMin));
     }
 
-    stringstream ss;
-    bool is_found = false;
-    while ( !is_found ) {
-        clrscr();
-        Table::Row&& vec_a = Table::Row();
-        Table::Row&& vec_b = Table::Row();
+    // get new centroid
+    for (int i=0;i<centroids.size();i++)
+         new_centroid_from(centroids.at(i),cl.at(i) );
 
-        ss.str("");
-        ss << "t1 = (" << ce_a.c->x << ", " << ce_a.c->y << ')';
-        auto header = [](stringstream& ss,Centroid& a)
-            { return (a.c->name.empty())? ss.str():a.c->name; };
-
-        vec_a.push_back(Cell {
-            .color = Color::BOLD,
-            .value = header(ss,ce_a),
-        });
-        ss.str("");
-        ss << "t2 = (" << ce_b.c->x << ", " << ce_b.c->y << ')';
-        vec_b.push_back(Cell {
-            .color = Color::BOLD,
-            .value = header(ss,ce_b),
-        });
-
-        if (points[0] == *ce_a.c && points[1] == *ce_b.c)
-        {
-            vec_a.push_back(Cell {
-                .color = Color::BOLD_FORE_YELLOW,
-                .value = "-"
-            });
-            vec_a.push_back(Cell {
-                .color = Color::BOLD_FORE_YELLOW,
-                .value = "-"
-            });
-            vec_b.push_back(Cell {
-                .color = Color::BOLD_FORE_YELLOW,
-                .value = "-"
-            });
-            vec_b.push_back(Cell {
-                .color = Color::BOLD_FORE_YELLOW,
-                .value = "-"
-            });
-        }
-
-        is_found = kmeans::solve(points,cl_a,cl_b,prev_cl_a,prev_cl_b,ce_a,ce_b);
-
-        for (int i = 0; i<ce_a.distance.size();i++)
-        {
-            ss.str("");
-            ss << ce_a.distance[i];
-            vec_a.push_back(Cell {
-                .color = "",
-                .value = ss.str(),
-            });
-            ss.str("");
-            ss << ce_b.distance[i];
-            vec_b.push_back(Cell {
-                .color = "",
-                .value = ss.str(),
-            });
-        }
-
-        table.push_col(std::forward<Table::Row>(vec_a));
-        table.push_col(std::forward<Table::Row>(vec_b));
-        table.print();
+    int ctr = 0;
+    if (!prevCl.empty())
+    {
+        for (int i=0;i<centroids.size();i++)
+            if (prevCl.at(i) == cl.at(i))
+                ctr++;
     }
-    // table.print();
-    cout << "Cluster A: \n{ ";
-    for(auto& it: cl_a) { cout << it->name << ' '; }
-    cout << "}\n";
-    cout << "Cluster B: \n{ ";
-    for(auto& it: cl_b) { cout << it->name << ' '; }
-    cout << "}\n";
-    cout << "Centroid A: (" << ce_a.c->x << ", " << ce_a.c->y << ")\n";
-    cout << "Centroid B: (" << ce_b.c->x << ", " << ce_b.c->y << ")\n";
-    cout << flush;
+    return ctr == centroids.size();
+}
 }
 
 int main(int argc, char* argv[])
 {
-    if(argc > 1)
+    // d <= 10 points
+    // k < 10
+    int d = 0, k = 0;
+    cout << "Enter number of points: ";
+    cin >> d;
+    Points points;
+    Centroids centroids;
+    for (int i=0;i<d;i++)
     {
-        string file = string(filesystem::current_path()) + '/' + argv[argc-1];
-        file_input(file);
+        double x=0, y=0;
+        cout << "Enter x and y (separated by space): ";
+        cin >> x >> y;
+        points.push_back({
+            .name = "P" + to_string(i+1),
+            .x = x,
+            .y = y
+        });
     }
-    else
+    cout << "Enter number of clusters: ";
+    cin >> k;
+    for (int i=0;i<k;i++)
     {
-        assert(0 && "Ask input; not implemented yet");
+        double x=0;
+        cout << "Enter a point number: ";
+        cin >> x;
+        if (x < points.size() && x > 0)
+        {
+            Point& p = points.at(x-1);
+            centroids.push_back({
+                .p = Point{
+                    .name = p.name,
+                    .x = p.x,
+                    .y = p.y
+                }
+            });
+        }
+        else {
+            i--;
+        }
     }
+    Clusters cluster;
+    Clusters prevCl;
+    Table table;
+    Table::Row row{
+        Cell{.color = Color::BOLD, .value = "Points"},
+        Cell{.color = Color::BOLD, .value = "x"},
+        Cell{.color = Color::BOLD, .value = "y"},
+    };
+    table.push_row(row);
+    stringstream ss;
+    for (auto& p: points)
+    {
+        auto s = [&ss](double val)
+        {
+            ss << val;
+            string r = ss.str();
+            ss.str("");
+            return r;
+        };
+        row = {
+            Cell{.value = p.name},
+            Cell{.value = s(p.x)},
+            Cell{.value = s(p.y)}
+        };
+        table.push_row(row);
+    }
+    int step = 1;
+
+    clrscr();
+    cout << Color::BOLD_FORE_RED << "Step " << step << Color::NORMAL << '\n';
+    cout << "K (" << k << ")\n";
+    for (int i=0;i<centroids.size();i++)
+        cout << "\tt" << i+1 << '(' << centroids.at(i).p.name << ")\n";
+
+    cout << Color::BOLD_FORE_RED << "Press Enter to Continue..." << Color::NORMAL;
+
+    cin.clear();
+    cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    cin.peek();
+
+    ss.str("");
+    Table::Column col(centroids.size());
+    int indOfCentroids[centroids.size()];
+    for (int p=0;p<points.size();p++)
+        for (auto& it: centroids)
+            if (it.p.name == points.at(p).name) indOfCentroids[p] = p;
+    while(1)
+    {
+        step++;
+        for (int ice=0;ice<centroids.size();ice++)
+        {
+            auto ce = centroids.at(ice);
+            if (ce.p.name.empty())
+            {
+                ss << '(' << ce.p.x << ", " << ce.p.y << ')';
+                col.at(ice).push_back(Cell{
+                    .color = Color::BOLD_FORE_RED,
+                    .value = ss.str()
+                });
+                ss.str("");
+            } else
+                col.at(ice).emplace_back(Cell{
+                    .color = Color::BOLD_FORE_RED,
+                    .value = ce.p.name
+                });
+        }
+
+        bool solved = kmeans::solve(
+            points,
+            centroids,
+            cluster,
+            prevCl,
+            table
+        );
+
+        for (int ice=0;ice<centroids.size();ice++)
+        {
+            auto ced = centroids.at(ice).distance;
+            assert(ced.size() == points.size());
+            for (int ip=0;ip<points.size();ip++)
+            {
+                bool isPCentroid = false;
+                if (step == 2)
+                {
+                    for (int i=0;i<centroids.size();i++)
+                        if (ip == indOfCentroids[i])
+                            isPCentroid = true;
+                }
+
+                if (isPCentroid) {
+                    col.at(ice).push_back(Cell{
+                        .value = "-",
+                    });
+                } else
+                {
+                    ss << ced.at(ip);
+                    col.at(ice).push_back(Cell{
+                        .value = ss.str()
+                    });
+                    ss.str("");
+                }
+            }
+        }
+        for (auto& t: col)
+        {
+            table.push_col(t);
+            t.clear();
+        }
+        clrscr();
+        table.print();
+        assert(cluster.size() ==centroids.size() );
+        cout << Color::BOLD_FORE_RED << "Step " << step << Color::NORMAL << '\n';
+        for (int i=0;i<centroids.size();i++)
+        {
+            cout << Color::BOLD_FORE_RED << "Cluster " << i+1 << Color::NORMAL << '\n';
+            ss << "(" << centroids.at(i).p.x << ", " << centroids.at(i).p.y << ")";
+            string s = ( centroids.at(i).p.name.empty() )? ss.str():centroids.at(i).p.name;
+            cout << s << '\n';
+            ss.str("");
+            cout << "\t{";
+            for (int p=0;p<cluster.at(i).size();p++)
+             {
+                 cout << cluster.at(i).at(p)->name;
+                 if (p < cluster.at(i).size()-1)
+                    cout << ", ";
+             }
+            cout << "}\n";
+        }
+        cout << Color::BOLD_FORE_RED << "Press Enter to Continue..." << Color::NORMAL;
+        cin.clear();
+        cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        cin.peek();
+        if (solved) break;
+    }
+    clrscr();
+    step++;
+    cout << Color::BOLD_FORE_RED << "Step " << step << Color::NORMAL << '\n';
+    for (int i=0;i<centroids.size();i++)
+    {
+        cout << Color::BOLD_FORE_RED << "Cluster " << i+1 << Color::NORMAL << '\n';
+        ss << "(" << centroids.at(i).p.x << ", " << centroids.at(i).p.y << ")";
+        cout << ss.str() << '\n';
+        ss.str("");
+    }
+    cout << Color::BOLD_FORE_RED << "Press Enter to Continue..." << Color::NORMAL;
+    cin.clear();
+    cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    cin.peek();
+
     return 0;
 }
