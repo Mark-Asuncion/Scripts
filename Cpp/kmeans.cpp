@@ -34,26 +34,31 @@ using Clusters = vector<Cluster>;
 using Points = vector<Point>;
 using Centroids = vector<Centroid>;
 
-void print(Centroids& ce, Clusters& val)
-{
-    for (int i=0;i<ce.size();i++)
-    {
-        cout << ce.at(i).p.info();
-        cout << '\n';
-        if (val.empty()) continue;
-        for (auto& j: val.at(i))
-        {
-            cout << "\n\t" << j->info();
-        }
-        cout << '\n';
-    }
-}
-
 namespace Color
 {
     const char* NORMAL  = "\x1B[0m";
     const char* BOLD = "\x1B[1m";
     const char* BOLD_FORE_RED  = "\x1B[1;31m";
+}
+
+void print(Centroids& centroids, Clusters& cluster)
+{
+    stringstream ss;
+    for (int i=0;i<centroids.size();i++)
+    {
+        cout << Color::BOLD_FORE_RED << "Cluster " << i+1 << Color::NORMAL << '\n';
+        ss << "(" << centroids.at(i).p.x << ", " << centroids.at(i).p.y << ")";
+        string s = ( centroids.at(i).p.name.empty() )? ss.str():centroids.at(i).p.name;
+        cout << s << '\n';
+        ss.str("");
+        cout << "\t{ ";
+        for (int p=0;p<cluster.at(i).size();p++)
+        {
+            if (cluster.at(i).at(p) == nullptr) continue;
+            cout << cluster.at(i).at(p)->name << ' ';
+        }
+        cout << "}\n";
+    }
 }
 
 struct Cell
@@ -137,15 +142,18 @@ void new_centroid_from(Centroid& ce, Cluster& cl)
     if (cl.empty()) return;
     double mSumX = 0;
     double mSumY = 0;
+    int ctr=0;
     for (auto& it: cl)
     {
+        if (it == nullptr) continue;
         mSumX += it->x;
         mSumY += it->y;
+        ctr++;
     }
     double newX = 0.0;
     double newY = 0.0;
-    newX = round_trunc( mSumX / cl.size() );
-    newY = round_trunc( mSumY / cl.size() );
+    newX = round_trunc( mSumX / ctr );
+    newY = round_trunc( mSumY / ctr );
 
     if (!ce.p.name.empty())
         ce.p.name = "";
@@ -158,7 +166,7 @@ bool solve(
     Centroids& centroids,
     Clusters& cl,
     Clusters& prevCl,
-    Table& table
+    double threshold
 )
 {
     for (auto& ce: centroids)
@@ -173,30 +181,32 @@ bool solve(
     if (!cl.empty())
         prevCl = std::move(cl);
     cl.resize(centroids.size());
+    for (auto& it: cl)
+        it.resize(points.size());
 
     // cluster
     for (int i=0;i<points.size();i++)
     {
         double pminDist = 10000.0;
-        int iMin = 0;
         int ceMin = -1;
+        int pMin = i;
         for(int j=0;j<centroids.size();j++)
         {
             double cDist = centroids.at(j).distance.at(i);
             if (pminDist > cDist)
             {
                 pminDist = cDist;
-                iMin = i;
                 ceMin = j;
+                pMin = i;
             }
         }
-        assert(ceMin != -1);
-        cl.at(ceMin).push_back(&points.at(iMin));
+        if (ceMin != -1)
+            cl.at(ceMin).at(pMin) = &points.at(pMin);
     }
 
     // get new centroid
     for (int i=0;i<centroids.size();i++)
-         new_centroid_from(centroids.at(i),cl.at(i) );
+         new_centroid_from(centroids.at(i),cl.at(i));
 
     int ctr = 0;
     if (!prevCl.empty())
@@ -229,16 +239,13 @@ int main(int argc, char* argv[])
             .y = y
         });
     }
-    cout << "Enter number of clusters: ";
+    cout << "Enter number of clusters (k): ";
     cin >> k;
     for (int i=0;i<k;i++)
     {
-        double x=0;
-        cout << "Enter a point number: ";
-        cin >> x;
-        if (x < points.size() && x > 0)
+        if (i < points.size())
         {
-            Point& p = points.at(x-1);
+            Point& p = points.at(i);
             centroids.push_back({
                 .p = Point{
                     .name = p.name,
@@ -247,10 +254,11 @@ int main(int argc, char* argv[])
                 }
             });
         }
-        else {
-            i--;
-        }
     }
+    double thresDist = 0.0;
+    cout << "Enter threshold distance (d): ";
+    cin >> thresDist;
+
     Clusters cluster;
     Clusters prevCl;
     Table table;
@@ -323,7 +331,7 @@ int main(int argc, char* argv[])
             centroids,
             cluster,
             prevCl,
-            table
+            thresDist
         );
 
         for (int ice=0;ice<centroids.size();ice++)
@@ -363,38 +371,44 @@ int main(int argc, char* argv[])
         table.print();
         assert(cluster.size() ==centroids.size() );
         cout << Color::BOLD_FORE_RED << "Step " << step << Color::NORMAL << '\n';
-        for (int i=0;i<centroids.size();i++)
-        {
-            cout << Color::BOLD_FORE_RED << "Cluster " << i+1 << Color::NORMAL << '\n';
-            ss << "(" << centroids.at(i).p.x << ", " << centroids.at(i).p.y << ")";
-            string s = ( centroids.at(i).p.name.empty() )? ss.str():centroids.at(i).p.name;
-            cout << s << '\n';
-            ss.str("");
-            cout << "\t{";
-            for (int p=0;p<cluster.at(i).size();p++)
-             {
-                 cout << cluster.at(i).at(p)->name;
-                 if (p < cluster.at(i).size()-1)
-                    cout << ", ";
-             }
-            cout << "}\n";
-        }
+        print(centroids,cluster);
         cout << Color::BOLD_FORE_RED << "Press Enter to Continue..." << Color::NORMAL;
         cin.clear();
         cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         cin.peek();
         if (solved) break;
+        if (step == 5) break;
     }
+    // bool okThres = sqrt(std::pow(points.at(i).x - centroids.at(j).p.x, 2) + std::pow(points.at(i).y - centroids.at(j).p.y, 2)) < threshold;
+    // prevCl = std::move(cluster);
+    // cluster.resize(centroids.size());
+    // for (auto& i: cluster)
+    //     i.resize(points.size());
+    //
+    // for (int i=0;i<points.size();i++)
+    // {
+    //     double pminDist = 10000.0;
+    //     int ceMin = -1;
+    //     int pMin = i;
+    //     for(int j=0;j<centroids.size();j++)
+    //     {
+    //         double cDist = centroids.at(j).distance.at(i);
+    //         bool okThres = round(sqrt(cDist)) < thresDist;
+    //         if (pminDist > cDist && okThres)
+    //         {
+    //             pminDist = cDist;
+    //             ceMin = j;
+    //             pMin = i;
+    //         }
+    //     }
+    //     if (ceMin != -1)
+    //         cluster.at(ceMin).at(pMin) = &points.at(pMin);
+    // }
     clrscr();
     step++;
+    table.print();
     cout << Color::BOLD_FORE_RED << "Step " << step << Color::NORMAL << '\n';
-    for (int i=0;i<centroids.size();i++)
-    {
-        cout << Color::BOLD_FORE_RED << "Cluster " << i+1 << Color::NORMAL << '\n';
-        ss << "(" << centroids.at(i).p.x << ", " << centroids.at(i).p.y << ")";
-        cout << ss.str() << '\n';
-        ss.str("");
-    }
+    print(centroids,cluster);
     cout << Color::BOLD_FORE_RED << "Press Enter to Continue..." << Color::NORMAL;
     cin.clear();
     cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
