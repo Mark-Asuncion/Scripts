@@ -1,3 +1,4 @@
+// function for solving kmeans kmeans::solve() line 165
 #include <cmath>
 #include <iostream>
 #include <cassert>
@@ -169,6 +170,7 @@ bool solve(
     double threshold
 )
 {
+    // get distance to each centroids
     for (auto& ce: centroids)
     {
         ce.distance.clear();
@@ -178,13 +180,15 @@ bool solve(
             ce.distance.emplace_back(round_trunc( dist ));
         }
     }
+
+    // move previous cluster to prevCl variable
     if (!cl.empty())
         prevCl = std::move(cl);
     cl.resize(centroids.size());
     for (auto& it: cl)
         it.resize(points.size());
 
-    // cluster
+    // clustering
     for (int i=0;i<points.size();i++)
     {
         double pminDist = 10000.0;
@@ -208,6 +212,7 @@ bool solve(
     for (int i=0;i<centroids.size();i++)
          new_centroid_from(centroids.at(i),cl.at(i));
 
+    // compare prev and current cluster
     int ctr = 0;
     if (!prevCl.empty())
     {
@@ -341,19 +346,15 @@ int main(int argc, char* argv[])
             for (int ip=0;ip<points.size();ip++)
             {
                 bool isPCentroid = false;
-                if (step == 2)
-                {
+                if (step == 2) {
                     for (int i=0;i<centroids.size();i++)
                         if (ip == indOfCentroids[i])
                             isPCentroid = true;
                 }
 
-                if (isPCentroid) {
-                    col.at(ice).push_back(Cell{
-                        .value = "-",
-                    });
-                } else
-                {
+                if (isPCentroid)
+                    col.at(ice).push_back(Cell{ .value = "-", });
+                else {
                     ss << ced.at(ip);
                     col.at(ice).push_back(Cell{
                         .value = ss.str()
@@ -362,8 +363,7 @@ int main(int argc, char* argv[])
                 }
             }
         }
-        for (auto& t: col)
-        {
+        for (auto& t: col) {
             table.push_col(t);
             t.clear();
         }
@@ -379,31 +379,33 @@ int main(int argc, char* argv[])
         if (solved) break;
         if (step == 5) break;
     }
-    // bool okThres = sqrt(std::pow(points.at(i).x - centroids.at(j).p.x, 2) + std::pow(points.at(i).y - centroids.at(j).p.y, 2)) < threshold;
-    // prevCl = std::move(cluster);
-    // cluster.resize(centroids.size());
-    // for (auto& i: cluster)
-    //     i.resize(points.size());
-    //
-    // for (int i=0;i<points.size();i++)
-    // {
-    //     double pminDist = 10000.0;
-    //     int ceMin = -1;
-    //     int pMin = i;
-    //     for(int j=0;j<centroids.size();j++)
-    //     {
-    //         double cDist = centroids.at(j).distance.at(i);
-    //         bool okThres = round(sqrt(cDist)) < thresDist;
-    //         if (pminDist > cDist && okThres)
-    //         {
-    //             pminDist = cDist;
-    //             ceMin = j;
-    //             pMin = i;
-    //         }
-    //     }
-    //     if (ceMin != -1)
-    //         cluster.at(ceMin).at(pMin) = &points.at(pMin);
-    // }
+    // bool okThreshold = sqrt(cDist) > threshold && sqrt(cDist) < threshold;
+
+    prevCl = std::move(cluster);
+    cluster.resize(centroids.size());
+    for (auto& i: cluster)
+        i.resize(points.size());
+
+    // filter out outliers
+    for (int i=0;i<points.size();i++)
+    {
+        double pminDist = 10000.0;
+        int ceMin = -1;
+        int pMin = i;
+        for(int j=0;j<centroids.size();j++)
+        {
+            double cDist = centroids.at(j).distance.at(i);
+            bool okThreshold = round(sqrt(cDist)) < thresDist;
+            if (pminDist > cDist && okThreshold)
+            {
+                pminDist = cDist;
+                ceMin = j;
+                pMin = i;
+            }
+        }
+        if (ceMin != -1)
+            cluster.at(ceMin).at(pMin) = &points.at(pMin);
+    }
     clrscr();
     step++;
     table.print();
