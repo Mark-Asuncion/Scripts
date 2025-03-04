@@ -91,7 +91,8 @@ def on_archiving_done():
     g_count_archive_done = 0
 
     if len(g_errs_paths) > 0:
-        tkinter.messagebox.showerror("Error", f"Failed to archive the following directories\n{g_errs_paths}")
+        err = "\n".join(g_errs_paths)
+        tkinter.messagebox.showerror("Error", f"{err}")
     
     g_label_progress_bar.config(text="Done")
     g_errs_paths = []
@@ -162,26 +163,23 @@ def archive(current_path: str, out_path: str, ignore: list[str]):
 
     try:
         if len(files) > 0:
-            basename_current_path = os.path.join(out_path, basename_current_path + ".cbz")
+            basename_current_path_cbz = os.path.join(out_path, basename_current_path + ".cbz")
             with ThreadHandler.lock:
                 g_count_total_files += len(files)
-            with zipfile.ZipFile(basename_current_path, "w", zipfile.ZIP_STORED) as z:
+            with zipfile.ZipFile(basename_current_path_cbz, "w", zipfile.ZIP_STORED) as z:
                 for file in files:
                     basename = os.path.basename(file)
                     z.write(file, basename)
                     with ThreadHandler.lock:
                         g_count_archive_done += 1
                         update_progress_bar(file)
-        else:
+        if len(dirs) > 0:
             out_path = os.path.join(out_path, basename_current_path)
-            print(out_path)
             if not os.path.exists(out_path):
                 os.makedirs(out_path)
     except Exception as e:
-        g_errs_paths.append(current_path)
         with ThreadHandler.lock:
-            log(f"ERR: {g_count_archive_done} / {g_count_total_files}")
-            log(f"ERR: {current_path} {e}")
+            g_errs_paths.append(f"{current_path} {e}")
     
     for dir in dirs:
         ThreadHandler.push(lambda d=dir, o=out_path, i=ignore: archive(d, o, i))
